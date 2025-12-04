@@ -8,3 +8,4 @@ cryptography
 ipfshttpclient
 web3
 psycopg2-binary
+pydantic-settings

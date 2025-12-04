@@ -3,7 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router as user_router
 from app.utils.config import settings
 
-app = FastAPI()
+app = FastAPI(title=settings.app_name)
+
+app.include_router(user_router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,10 +1,10 @@
-DATABASE_URL = "postgresql://user:password@db:5432/mydatabase"
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+from pydantic_settings import BaseSettings  
 
-# IPFS configuration
-IPFS_URL = "http://localhost:5001"
+class Settings(BaseSettings):
+    app_name: str = "Certify"
+    database_url: str
 
-# Sepolia network configuration
-SEPOLIA_URL = "https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID"
+    class Config:
+        env_file = ".env" 
+
+settings = Settings()
