@@ -9,9 +9,9 @@ declare global {
 
 export function useWallet() {
   const walletAddress = ref<string | null>(null)
-  const provider = ref<ethers.BrowserProvider | null>(null)
+  const provider = ref<ethers.providers.Web3Provider | null>(null)
   const signer = ref<ethers.Signer | null>(null)
-  
+
   const isConnected = computed(() => !!walletAddress.value)
 
   const connectWallet = async (): Promise<string> => {
@@ -21,17 +21,15 @@ export function useWallet() {
 
     try {
       // Request account access
-      const accounts = await window.ethereum.request({ 
-        method: "eth_requestAccounts" 
-      })
-      
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" })
+
       if (!accounts || accounts.length === 0) {
         throw new Error("No accounts found")
       }
 
       // Setup provider and signer
-      provider.value = new ethers.BrowserProvider(window.ethereum)
-      signer.value = await provider.value.getSigner()
+      provider.value = new ethers.providers.Web3Provider(window.ethereum)
+      signer.value = provider.value.getSigner()
       walletAddress.value = accounts[0]
 
       return accounts[0]

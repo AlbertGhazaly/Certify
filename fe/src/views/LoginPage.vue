@@ -110,12 +110,13 @@ const handleConnectWallet = async () => {
     // Connect to MetaMask
     const address = await connectWalletHook()
     connectedAddress.value = address
-
+    console.log('Connected address:', address)
     // Request authentication challenge from backend
     const { challenge } = await authStore.requestChallenge(address)
     
     authChallenge.value = challenge
     step.value = 'sign'
+    
   } catch (e) {
     errorMessage.value = e instanceof Error ? e.message : 'Failed to connect wallet'
     resetFlow()

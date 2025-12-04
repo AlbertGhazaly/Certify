@@ -6,7 +6,7 @@ from app.services.crypto import AuthCryptoService
 from app.services.nonce import NonceService
 from app.services.session import SessionService
 
-router = APIRouter(prefix="/auth", tags=["authentication"])
+router = APIRouter(tags=["authentication"])
 
 crypto_service = AuthCryptoService()
 
