@@ -1,7 +1,5 @@
 from sqlalchemy import Column, String, BigInteger
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from app.database.connection import Base
 
 class Nonce(Base):
     __tablename__ = "nonces"

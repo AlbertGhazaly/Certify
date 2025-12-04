@@ -3,7 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router as user_router
 from app.api.auth import router as auth_router
 from app.utils.config import settings
+from app.database.connection import engine, Base
 
+# Import all models to ensure they are registered with Base
+from app.models.user import User
+from app.models.nonce import Nonce
+from app.models.session import Session
+
+# Create all tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.app_name)
 
