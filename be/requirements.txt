@@ -9,3 +9,7 @@ ipfshttpclient
 web3
 psycopg2-binary
 pydantic-settings
+eth-account
+eth-keys
+eth-utils
+python-multipart
