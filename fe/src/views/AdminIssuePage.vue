@@ -1,176 +1,148 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-12">
-    <div class="max-w-4xl mx-auto px-4">
-      <div class="bg-white rounded-lg shadow-md p-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Issue New Diploma</h1>
-        <p class="text-gray-600 mb-8">Create and issue a new digital diploma certificate</p>
+  <div class="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+      <router-link to="/" class="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-8">
+        <span>←</span> Back
+      </router-link>
 
-        <template v-if="!authStore.isAuthenticated">
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-            <p class="text-blue-900">Please connect your wallet to issue diplomas</p>
-            <router-link to="/login" class="mt-2 inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-              Connect Wallet
-            </router-link>
-          </div>
-        </template>
+      <div class="bg-card border border-border rounded-xl p-6 sm:p-8">
+        <h1 class="text-3xl sm:text-4xl font-bold text-foreground mb-2">Issue New Diploma</h1>
+        <p class="text-muted-foreground mb-8">Create and issue a new digital diploma certificate</p>
 
-        <template v-else-if="authStore.userRole !== 'admin'">
-          <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-            <p class="text-red-900">Only institution admins can issue diplomas</p>
-          </div>
-        </template>
-
-        <template v-else>
-          <form @submit.prevent="handleSubmit" class="space-y-6">
-            <!-- Student Information -->
-            <div>
-              <h2 class="text-lg font-semibold text-gray-900 mb-4">Student Information</h2>
-              <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Student Name *</label>
-                  <input
-                    v-model="form.studentName"
-                    type="text"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Full name"
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Student ID *</label>
-                  <input
-                    v-model="form.studentId"
-                    type="text"
-                    required
-                    pattern="\d{8}"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="8 digit ID"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Diploma Information -->
-            <div>
-              <h2 class="text-lg font-semibold text-gray-900 mb-4">Diploma Information</h2>
-              <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Degree *</label>
-                  <input
-                    v-model="form.degree"
-                    type="text"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., Sarjana Teknik"
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Issue Date *</label>
-                  <input
-                    v-model="form.issueDate"
-                    type="date"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Birth Information -->
-            <div>
-              <h2 class="text-lg font-semibold text-gray-900 mb-4">Birth Information</h2>
-              <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Birth Place *</label>
-                  <input
-                    v-model="form.birthPlace"
-                    type="text"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="City"
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Birth Date *</label>
-                  <input
-                    v-model="form.birthDate"
-                    type="date"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Document Upload -->
-            <div>
-              <h2 class="text-lg font-semibold text-gray-900 mb-4">Document Upload</h2>
-              <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition">
+        <form @submit.prevent="handleSubmit" class="space-y-8">
+          <!-- Student Information -->
+          <div>
+            <h2 class="text-lg font-semibold text-foreground mb-4">Student Information</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-foreground mb-2">Student Name *</label>
                 <input
-                  ref="fileInput"
-                  type="file"
-                  accept=".pdf"
-                  @change="handleFileUpload"
-                  class="hidden"
+                  v-model="form.studentName"
+                  type="text"
+                  required
+                  placeholder="Full name"
+                  class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
                 />
-                <button
-                  type="button"
-                  @click="$refs.fileInput?.$el.click()"
-                  class="text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Click to upload or drag and drop
-                </button>
-                <p class="text-sm text-gray-500 mt-2">PDF up to 100KB</p>
-                <p v-if="form.documentFile" class="mt-2 text-sm text-green-600">
-                  ✓ {{ form.documentFile.name }}
-                </p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-foreground mb-2">Student ID *</label>
+                <input
+                  v-model="form.studentId"
+                  type="text"
+                  required
+                  pattern="\d{8}"
+                  placeholder="8 digit ID"
+                  class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                />
               </div>
             </div>
+          </div>
 
-            <!-- Encryption Key -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Encryption Key *</label>
-              <input
-                v-model="form.encryptionKey"
-                type="password"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="AES encryption key"
-              />
-              <p class="text-xs text-gray-600 mt-1">Used to encrypt the diploma PDF</p>
+          <!-- Diploma Information -->
+          <div>
+            <h2 class="text-lg font-semibold text-foreground mb-4">Diploma Information</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-foreground mb-2">Degree *</label>
+                <input
+                  v-model="form.degree"
+                  type="text"
+                  required
+                  placeholder="e.g., B.S. Computer Science"
+                  class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-foreground mb-2">Issue Date *</label>
+                <input
+                  v-model="form.issueDate"
+                  type="date"
+                  required
+                  class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
             </div>
+          </div>
 
-            <!-- Submit -->
-            <div class="flex gap-4 pt-4">
-              <button
-                type="submit"
-                :disabled="isSubmitting"
-                class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 transition"
-              >
-                <span v-if="!isSubmitting">Issue Diploma</span>
-                <span v-else>Processing...</span>
-              </button>
-              <button
-                type="reset"
-                class="px-6 py-3 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 transition"
-              >
-                Clear
-              </button>
+          <!-- Birth Information -->
+          <div>
+            <h2 class="text-lg font-semibold text-foreground mb-4">Birth Information</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-foreground mb-2">Birth Place *</label>
+                <input
+                  v-model="form.birthPlace"
+                  type="text"
+                  required
+                  placeholder="City"
+                  class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-foreground mb-2">Birth Date *</label>
+                <input
+                  v-model="form.birthDate"
+                  type="date"
+                  required
+                  class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
             </div>
+          </div>
 
-            <!-- Messages -->
-            <div v-if="successMessage" class="bg-green-50 border border-green-200 rounded-lg p-4 text-green-900">
-              {{ successMessage }}
+          <!-- Document Upload -->
+          <div>
+            <h2 class="text-lg font-semibold text-foreground mb-4">Document Upload</h2>
+            <div class="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-accent/50 transition bg-background">
+              <p class="text-accent font-medium">Click to upload or drag and drop</p>
+              <p class="text-sm text-muted-foreground mt-1">PDF up to 100KB</p>
+              <p v-if="form.documentFile" class="mt-2 text-sm text-accent">✓ {{ form.documentFile.name }}</p>
             </div>
-            <div v-if="errorMessage" class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-900">
-              {{ errorMessage }}
-            </div>
-          </form>
-        </template>
+          </div>
+
+          <!-- Encryption Key -->
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-2">Encryption Key *</label>
+            <input
+              v-model="form.encryptionKey"
+              type="password"
+              required
+              placeholder="AES encryption key"
+              class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+            />
+            <p class="text-xs text-muted-foreground mt-1">Used to encrypt the diploma PDF</p>
+          </div>
+
+          <!-- Submit -->
+          <div class="flex flex-col sm:flex-row gap-4 pt-4">
+            <button
+              type="submit"
+              :disabled="isSubmitting"
+              class="flex-1 px-6 py-3 bg-accent text-accent-foreground rounded-lg font-medium hover:bg-accent/90 disabled:bg-muted transition"
+            >
+              {{ isSubmitting ? 'Processing...' : 'Issue Diploma' }}
+            </button>
+            <button
+              type="reset"
+              class="px-6 py-3 bg-secondary text-foreground rounded-lg font-medium hover:bg-secondary/80 transition"
+            >
+              Clear
+            </button>
+          </div>
+
+          <!-- Messages -->
+          <div v-if="successMessage" class="bg-accent/10 border border-accent/50 rounded-lg p-4 text-accent">
+            {{ successMessage }}
+          </div>
+          <div v-if="errorMessage" class="bg-destructive/10 border border-destructive/50 rounded-lg p-4 text-destructive">
+            {{ errorMessage }}
+          </div>
+        </form>
       </div>
     </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { ref } from 'vue';

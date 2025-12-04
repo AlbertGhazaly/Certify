@@ -1,42 +1,61 @@
 <template>
-  <div class="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition">
-    <div class="flex items-center justify-between mb-3">
+  <div class="group bg-gradient-to-r from-slate-800 to-slate-800/50 border border-slate-700 hover:border-purple-500/30 rounded-xl p-4 hover:shadow-lg hover:shadow-purple-500/5 transition-all duration-300">
+    <!-- Header with Type and Time -->
+    <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
       <div class="flex items-center gap-3">
+        <!-- Type Indicator Dot -->
         <div
           :class="[
-            'w-2 h-2 rounded-full',
+            'w-3 h-3 rounded-full flex-shrink-0',
             typeColor
           ]"
         />
-        <h3 class="font-semibold text-gray-900 capitalize">{{ transaction.type }} Transaction</h3>
+        <h3 class="font-bold text-white capitalize">{{ transaction.type }} Transaction</h3>
       </div>
-      <span class="text-xs text-gray-600">{{ formatTime(transaction.timestamp) }}</span>
+      <span class="text-xs text-gray-500 whitespace-nowrap">{{ formatTime(transaction.timestamp) }}</span>
     </div>
 
-    <div class="grid md:grid-cols-2 gap-4 text-sm">
-      <div>
-        <p class="text-gray-600">Certificate ID</p>
-        <p class="font-mono text-xs text-gray-900 truncate">{{ transaction.certificateId }}</p>
+    <!-- Transaction Details Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-sm">
+      <!-- Certificate ID -->
+      <div class="space-y-1">
+        <p class="text-xs text-gray-500 font-medium">Certificate ID</p>
+        <p class="font-mono text-xs text-gray-400 truncate bg-slate-900/50 px-2 py-1.5 rounded">
+          {{ transaction.certificateId }}
+        </p>
       </div>
-      <div>
-        <p class="text-gray-600">Transaction Hash</p>
-        <p class="font-mono text-xs text-gray-900 truncate">{{ transaction.hash }}</p>
+
+      <!-- Transaction Hash -->
+      <div class="space-y-1">
+        <p class="text-xs text-gray-500 font-medium">Tx Hash</p>
+        <p class="font-mono text-xs text-gray-400 truncate bg-slate-900/50 px-2 py-1.5 rounded">
+          {{ transaction.hash }}
+        </p>
       </div>
-      <div>
-        <p class="text-gray-600">Issuer</p>
-        <p class="font-mono text-xs text-gray-900 truncate">{{ transaction.issuerAddress }}</p>
+
+      <!-- Issuer Address -->
+      <div class="space-y-1">
+        <p class="text-xs text-gray-500 font-medium">Issuer</p>
+        <p class="font-mono text-xs text-gray-400 truncate bg-slate-900/50 px-2 py-1.5 rounded">
+          {{ transaction.issuerAddress }}
+        </p>
       </div>
-      <div>
-        <p class="text-gray-600">Block #</p>
-        <p class="font-semibold text-gray-900">{{ transaction.blockNumber }}</p>
+
+      <!-- Block Number -->
+      <div class="space-y-1">
+        <p class="text-xs text-gray-500 font-medium">Block #</p>
+        <p class="text-white font-semibold">{{ transaction.blockNumber }}</p>
       </div>
     </div>
 
-    <div class="mt-3 pt-3 border-t border-gray-200">
-      <p class="text-xs text-gray-600 mb-2">Signature</p>
-      <p class="font-mono text-xs bg-gray-50 p-2 rounded truncate text-gray-900">
-        {{ transaction.signature }}
-      </p>
+    <!-- Signature Section -->
+    <div class="pt-4 border-t border-slate-700">
+      <p class="text-xs text-gray-500 font-medium mb-2">Signature</p>
+      <div class="bg-slate-900/50 px-3 py-2 rounded border border-slate-700 hover:border-slate-600 transition">
+        <p class="font-mono text-xs text-gray-500 truncate">
+          {{ transaction.signature }}
+        </p>
+      </div>
     </div>
   </div>
 </template>

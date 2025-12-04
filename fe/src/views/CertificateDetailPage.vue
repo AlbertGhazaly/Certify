@@ -1,113 +1,82 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-12">
-    <div class="max-w-4xl mx-auto px-4">
-      <router-link to="/explorer" class="text-blue-600 hover:text-blue-700 mb-6 inline-block">
-        ← Back to Explorer
+  <div class="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+      <router-link to="/explorer" class="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-8">
+        <span>←</span> Back to Explorer
       </router-link>
 
-      <template v-if="isLoading">
-        <div class="bg-white rounded-lg shadow-md p-8 text-center">
-          <p class="text-gray-600">Loading certificate details...</p>
-        </div>
-      </template>
-
-      <template v-else-if="!certificate">
-        <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <p class="text-red-900">Certificate not found</p>
-        </div>
-      </template>
-
-      <template v-else>
-        <div class="bg-white rounded-lg shadow-md p-8 mb-8">
-          <div class="mb-6 pb-6 border-b border-gray-200">
-            <div class="flex items-start justify-between mb-4">
-              <div>
-                <h1 class="text-3xl font-bold text-gray-900">{{ certificate.studentName }}</h1>
-                <p class="text-gray-600 mt-1">Student ID: {{ certificate.studentId }}</p>
-              </div>
-              <span
-                :class="[
-                  'px-4 py-2 rounded-full text-sm font-semibold',
-                  certificate.status === 'active'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                ]"
-              >
-                {{ certificate.status.toUpperCase() }}
-              </span>
+      <div class="bg-card border border-border rounded-xl p-6 sm:p-8 mb-8">
+        <div class="mb-6 pb-6 border-b border-border">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+            <div>
+              <h1 class="text-3xl font-bold text-foreground">John Smith</h1>
+              <p class="text-muted-foreground mt-1">Student ID: STU_12345678</p>
             </div>
-          </div>
-
-          <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-8 mb-8 border border-blue-200">
-            <div class="text-center space-y-4">
-              <p class="text-gray-700">Kementerian Pendidikan Tinggi, Sains, dan Teknologi</p>
-              <p class="text-gray-700">{{ certificate.institution }}</p>
-              <p class="text-gray-700 mt-6">Dengan ini menyatakan bahwa</p>
-              <p class="text-2xl font-bold text-gray-900 mt-4">{{ certificate.studentName }}</p>
-              <p class="text-gray-700">Telah menyelesaikan dan memenuhi semua persyaratan</p>
-              <p class="text-lg font-semibold text-indigo-900 mt-4">{{ certificate.degree }}</p>
-              <p class="text-gray-700 mt-6">Diberikan di {{ certificate.institution }}</p>
-              <p class="text-gray-700">{{ formatDate(certificate.issueDate) }}</p>
-            </div>
-          </div>
-
-          <div class="grid md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-gray-50 rounded-lg p-4">
-              <h3 class="font-semibold text-gray-900 mb-3">Issued By</h3>
-              <p class="font-mono text-sm text-gray-700 break-all">{{ certificate.issuerAddress }}</p>
-            </div>
-            <div class="bg-gray-50 rounded-lg p-4">
-              <h3 class="font-semibold text-gray-900 mb-3">Issued Date</h3>
-              <p class="text-gray-700">{{ formatDate(certificate.issueDate) }}</p>
-            </div>
-          </div>
-
-          <div class="space-y-4 mb-8">
-            <div class="bg-gray-50 rounded-lg p-4">
-              <h3 class="font-semibold text-gray-900 mb-2">Document Hash (SHA-256)</h3>
-              <p class="font-mono text-xs text-gray-700 break-all bg-white p-2 rounded">
-                {{ certificate.documentHash }}
-              </p>
-            </div>
-            <div class="bg-gray-50 rounded-lg p-4">
-              <h3 class="font-semibold text-gray-900 mb-2">IPFS CID</h3>
-              <p class="font-mono text-xs text-gray-700 break-all bg-white p-2 rounded">
-                {{ certificate.ipfsCid }}
-              </p>
-            </div>
-            <div class="bg-gray-50 rounded-lg p-4">
-              <h3 class="font-semibold text-gray-900 mb-2">Signature Hash</h3>
-              <p class="font-mono text-xs text-gray-700 break-all bg-white p-2 rounded">
-                {{ certificate.signatureHash }}
-              </p>
-            </div>
-          </div>
-
-          <div class="flex gap-4 pt-4 border-t border-gray-200">
-            <button
-              @click="downloadCertificate"
-              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
-            >
-              Download Certificate
-            </button>
-            <button
-              @click="verifyCertificate"
-              class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition"
-            >
-              Verify on Blockchain
-            </button>
-            <router-link
-              :to="`/explorer?tx=${certificate.signatureHash}`"
-              class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition text-center"
-            >
-              View on Explorer
-            </router-link>
+            <span class="px-4 py-2 bg-accent/20 text-accent rounded-full text-sm font-semibold">ACTIVE</span>
           </div>
         </div>
-      </template>
+
+        <div class="bg-gradient-to-br from-accent/10 via-primary/10 to-accent/10 rounded-lg p-6 sm:p-8 mb-8 border border-accent/30">
+          <div class="text-center space-y-4">
+            <p class="text-muted-foreground">Kementerian Pendidikan Tinggi, Sains, dan Teknologi</p>
+            <p class="text-foreground">University of Technology</p>
+            <p class="text-muted-foreground mt-6">Hereby certifies that</p>
+            <p class="text-2xl font-bold text-foreground mt-4">John Smith</p>
+            <p class="text-muted-foreground">Has successfully completed all requirements for</p>
+            <p class="text-lg font-semibold text-accent mt-4">Bachelor of Science in Computer Science</p>
+            <p class="text-muted-foreground mt-6">Awarded at University of Technology</p>
+            <p class="text-muted-foreground">December 15, 2023</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <div class="bg-background rounded-lg p-4 border border-border">
+            <h3 class="font-semibold text-foreground mb-2">Issued By</h3>
+            <p class="font-mono text-sm text-muted-foreground break-all">0x1234567890abcdef...</p>
+          </div>
+          <div class="bg-background rounded-lg p-4 border border-border">
+            <h3 class="font-semibold text-foreground mb-2">Issue Date</h3>
+            <p class="text-muted-foreground">December 15, 2023</p>
+          </div>
+        </div>
+
+        <div class="space-y-4 mb-8">
+          <div class="bg-background rounded-lg p-4 border border-border">
+            <h3 class="font-semibold text-foreground mb-2">Document Hash (SHA-256)</h3>
+            <p class="font-mono text-xs text-muted-foreground break-all bg-card p-2 rounded">
+              0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+            </p>
+          </div>
+          <div class="bg-background rounded-lg p-4 border border-border">
+            <h3 class="font-semibold text-foreground mb-2">IPFS CID</h3>
+            <p class="font-mono text-xs text-muted-foreground break-all bg-card p-2 rounded">
+              QmX1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z
+            </p>
+          </div>
+          <div class="bg-background rounded-lg p-4 border border-border">
+            <h3 class="font-semibold text-foreground mb-2">Signature Hash</h3>
+            <p class="font-mono text-xs text-muted-foreground break-all bg-card p-2 rounded">
+              0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-border">
+          <button class="flex-1 px-4 py-2 bg-accent text-accent-foreground rounded-lg font-medium hover:bg-accent/90 transition">
+            Download Certificate
+          </button>
+          <button class="flex-1 px-4 py-2 bg-secondary text-foreground rounded-lg font-medium hover:bg-secondary/80 transition">
+            Verify on Blockchain
+          </button>
+          <router-link to="/explorer" class="flex-1 px-4 py-2 bg-card border border-border text-foreground rounded-lg font-medium hover:bg-secondary transition text-center">
+            View on Explorer
+          </router-link>
+        </div>
+      </div>
     </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'

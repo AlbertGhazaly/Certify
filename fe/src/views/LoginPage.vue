@@ -1,54 +1,100 @@
 <!-- eslint-disable vue/no-multiple-template-root -->
 <template>
-  <div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-    <div class="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2 text-center">Connect Wallet</h1>
-      <p class="text-gray-600 text-center mb-8">Sign in to your diploma account</p>
+  <div class="min-h-screen bg-background flex items-center justify-center py-12 px-4">
+    <div class="w-full max-w-md">
+      <!-- Back Button -->
+      <router-link to="/" class="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-8">
+        <span>←</span> Back to Home
+      </router-link>
 
-      <template v-if="step === 'role'">
-        <RoleSelector v-model="selectedRole" class="mb-6" />
-        <button
-          @click="handleConnectWallet"
-          :disabled="!selectedRole || isConnecting"
-          class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 transition"
-        >
-          <span v-if="!isConnecting">Continue with Wallet</span>
-          <span v-else>Connecting...</span>
-        </button>
-      </template>
-
-      <template v-else-if="step === 'sign'">
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <p class="text-sm text-blue-900">
-            Please sign the authentication challenge with your wallet to verify ownership
-          </p>
+      <div class="bg-card border border-border rounded-xl p-8">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-foreground mb-2">Connect Wallet</h1>
+          <p class="text-muted-foreground">Sign in to your diploma account</p>
         </div>
-        <div class="mb-6 p-4 bg-gray-50 rounded-lg break-all font-mono text-xs text-gray-700">
-          {{ authChallenge }}
-        </div>
-        <button
-          @click="handleSignAndLogin"
-          :disabled="isSigning"
-          class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 transition"
-        >
-          <span v-if="!isSigning">Sign Challenge</span>
-          <span v-else>Signing...</span>
-        </button>
-        <button
-          @click="step = 'role'"
-          class="w-full mt-2 px-4 py-3 bg-gray-200 text-gray-900 rounded-lg font-semibold hover:bg-gray-300 transition"
-        >
-          Back
-        </button>
-      </template>
 
-      <div v-if="errorMessage" class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-        <p class="text-red-900 text-sm">{{ errorMessage }}</p>
+        <template v-if="step === 'role'">
+          <div class="space-y-3 mb-6">
+            <button 
+              @click="selectedRole = 'admin'"
+              :class="[
+                'w-full p-4 rounded-lg border-2 transition text-left',
+                selectedRole === 'admin' 
+                  ? 'border-accent bg-accent/10' 
+                  : 'border-border bg-background hover:border-accent/50'
+              ]"
+            >
+              <p class="font-semibold text-foreground">Institution Admin</p>
+              <p class="text-sm text-muted-foreground">Issue and manage diplomas</p>
+            </button>
+            <button 
+              @click="selectedRole = 'verifier'"
+              :class="[
+                'w-full p-4 rounded-lg border-2 transition text-left',
+                selectedRole === 'verifier' 
+                  ? 'border-accent bg-accent/10' 
+                  : 'border-border bg-background hover:border-accent/50'
+              ]"
+            >
+              <p class="font-semibold text-foreground">Verifier</p>
+              <p class="text-sm text-muted-foreground">Verify diploma authenticity</p>
+            </button>
+            <button 
+              @click="selectedRole = 'student'"
+              :class="[
+                'w-full p-4 rounded-lg border-2 transition text-left',
+                selectedRole === 'student' 
+                  ? 'border-accent bg-accent/10' 
+                  : 'border-border bg-background hover:border-accent/50'
+              ]"
+            >
+              <p class="font-semibold text-foreground">Student</p>
+              <p class="text-sm text-muted-foreground">Access your certificates</p>
+            </button>
+          </div>
+          <button
+            @click="handleConnectWallet"
+            :disabled="!selectedRole || isConnecting"
+            class="w-full px-4 py-3 bg-accent text-accent-foreground rounded-lg font-semibold hover:bg-accent/90 disabled:bg-muted disabled:text-muted-foreground transition"
+          >
+            <span v-if="!isConnecting">Continue with Wallet</span>
+            <span v-else>Connecting...</span>
+          </button>
+        </template>
+
+        <template v-else-if="step === 'sign'">
+          <div class="bg-accent/10 border border-accent/50 rounded-lg p-4 mb-6">
+            <p class="text-sm text-foreground">
+              Please sign the authentication challenge with your wallet to verify ownership
+            </p>
+          </div>
+          <div class="mb-6 p-4 bg-background rounded-lg border border-border break-all font-mono text-xs text-muted-foreground">
+            {{ authChallenge }}
+          </div>
+          <button
+            @click="handleSignAndLogin"
+            :disabled="isSigning"
+            class="w-full px-4 py-3 bg-accent text-accent-foreground rounded-lg font-semibold hover:bg-accent/90 disabled:bg-muted disabled:text-muted-foreground transition mb-2"
+          >
+            <span v-if="!isSigning">Sign Challenge</span>
+            <span v-else>Signing...</span>
+          </button>
+          <button
+            @click="step = 'role'"
+            class="w-full px-4 py-3 bg-secondary text-foreground rounded-lg font-semibold hover:bg-secondary/80 transition"
+          >
+            Back
+          </button>
+        </template>
+
+        <div v-if="errorMessage" class="mt-6 bg-destructive/10 border border-destructive/50 rounded-lg p-4">
+          <p class="text-destructive text-sm">{{ errorMessage }}</p>
+        </div>
+
+        <p class="text-muted-foreground text-xs text-center mt-6">
+          Make sure you're using a supported Web3 wallet like MetaMask
+        </p>
       </div>
-
-      <p class="text-gray-600 text-xs text-center mt-6">
-        Make sure you're using a supported Web3 wallet like MetaMask
-      </p>
     </div>
   </div>
 </template>

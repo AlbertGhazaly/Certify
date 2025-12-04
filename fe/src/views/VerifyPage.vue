@@ -1,134 +1,118 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-12">
-    <div class="max-w-4xl mx-auto px-4">
-      <div class="bg-white rounded-lg shadow-md p-8 mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Verify Diploma</h1>
-        <p class="text-gray-600 mb-8">Enter certificate details to verify its authenticity on the blockchain</p>
+  <div class="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+      <router-link to="/" class="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-8">
+        <span>←</span> Back
+      </router-link>
+
+      <div class="bg-card border border-border rounded-xl p-6 sm:p-8 mb-8">
+        <h1 class="text-3xl sm:text-4xl font-bold text-foreground mb-2">Verify Diploma</h1>
+        <p class="text-muted-foreground mb-8">Enter certificate details to verify its authenticity on the blockchain</p>
 
         <form @submit.prevent="handleVerify" class="space-y-6">
-          <div class="grid md:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Certificate ID *</label>
+              <label class="block text-sm font-medium text-foreground mb-2">Certificate ID *</label>
               <input
                 v-model="searchForm.certificateId"
                 type="text"
                 required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="CERT_1234567890"
+                class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Transaction Hash *</label>
+              <label class="block text-sm font-medium text-foreground mb-2">Transaction Hash *</label>
               <input
                 v-model="searchForm.transactionHash"
                 type="text"
                 required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="0x..."
+                class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
               />
             </div>
           </div>
 
-          <div class="grid md:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Document Hash (SHA-256) *</label>
+              <label class="block text-sm font-medium text-foreground mb-2">Document Hash (SHA-256) *</label>
               <input
                 v-model="searchForm.documentHash"
                 type="text"
                 required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Hash in hex format"
+                placeholder="Hash in hex..."
+                class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Issuer Address *</label>
+              <label class="block text-sm font-medium text-foreground mb-2">Issuer Address *</label>
               <input
                 v-model="searchForm.issuerAddress"
                 type="text"
                 required
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="0x..."
+                class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
               />
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">AES Encryption Key</label>
+            <label class="block text-sm font-medium text-foreground mb-2">AES Encryption Key</label>
             <input
               v-model="searchForm.encryptionKey"
               type="password"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Required to decrypt the diploma PDF"
+              placeholder="Leave blank if not encrypted"
+              class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
 
           <button
             type="submit"
             :disabled="isVerifying"
-            class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-400 transition"
+            class="w-full px-6 py-3 bg-accent text-accent-foreground rounded-lg font-semibold hover:bg-accent/90 disabled:bg-muted transition"
           >
-            <span v-if="!isVerifying">Verify Certificate</span>
-            <span v-else>Verifying...</span>
+            {{ isVerifying ? 'Verifying...' : 'Verify Certificate' }}
           </button>
         </form>
 
-        <div v-if="verificationError" class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-          <p class="text-red-900 font-medium">Verification Failed</p>
-          <p class="text-red-800 text-sm mt-1">{{ verificationError }}</p>
+        <div v-if="verificationError" class="mt-6 bg-destructive/10 border border-destructive/50 rounded-lg p-4">
+          <p class="text-destructive font-medium">Verification Failed</p>
+          <p class="text-destructive/80 text-sm mt-1">{{ verificationError }}</p>
         </div>
       </div>
 
-      <template v-if="verificationResult">
-        <div
-          :class="[
-            'rounded-lg shadow-md p-8 mb-8',
-            verificationResult.isValid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-          ]"
-        >
-          <div class="flex items-start gap-4">
-            <div
+      <div v-if="verificationResult" class="bg-card border border-border rounded-xl p-6 sm:p-8"
+        :class="verificationResult.isValid ? 'border-accent/50' : 'border-destructive/50'"
+      >
+        <div class="flex items-start gap-4 mb-6">
+          <div
+            :class="[
+              'w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-xl',
+              verificationResult.isValid 
+                ? 'bg-accent/20 text-accent' 
+                : 'bg-destructive/20 text-destructive'
+            ]"
+          >
+            {{ verificationResult.isValid ? '✓' : '✗' }}
+          </div>
+          <div>
+            <h2
               :class="[
-                'w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0',
-                verificationResult.isValid ? 'bg-green-200' : 'bg-red-200'
+                'text-2xl font-bold mb-1',
+                verificationResult.isValid ? 'text-accent' : 'text-destructive'
               ]"
             >
-              <span :class="verificationResult.isValid ? 'text-green-700' : 'text-red-700'">
-                {{ verificationResult.isValid ? '✓' : '✗' }}
-              </span>
-            </div>
-            <div class="flex-1">
-              <h2
-                :class="[
-                  'text-2xl font-bold mb-2',
-                  verificationResult.isValid ? 'text-green-900' : 'text-red-900'
-                ]"
-              >
-                {{ verificationResult.isValid ? 'Certificate Valid' : 'Certificate Invalid' }}
-              </h2>
-              <p
-                :class="verificationResult.isValid ? 'text-green-800' : 'text-red-800'"
-              >
-                {{ verificationResult.isValid ? 'This diploma is authentic and has not been tampered with.' : 'This diploma could not be verified.' }}
-              </p>
-            </div>
+              {{ verificationResult.isValid ? 'Certificate Valid' : 'Certificate Invalid' }}
+            </h2>
+            <p :class="verificationResult.isValid ? 'text-accent/80' : 'text-destructive/80'">
+              {{ verificationResult.isValid 
+                ? 'This diploma is authentic and has not been tampered with.' 
+                : 'This diploma could not be verified.' 
+              }}
+            </p>
           </div>
         </div>
-
-        <template v-if="verificationResult.certificate">
-          <CertificateCard :certificate="verificationResult.certificate" @verify="handleVerify" />
-        </template>
-
-        <template v-if="verificationResult.errors.length > 0">
-          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h3 class="font-semibold text-yellow-900 mb-3">Verification Issues</h3>
-            <ul class="space-y-2">
-              <li v-for="(error, index) in verificationResult.errors" :key="index" class="text-sm text-yellow-800">
-                • {{ error }}
-              </li>
-            </ul>
-          </div>
-        </template>
-      </template>
+      </div>
     </div>
   </div>
 </template>

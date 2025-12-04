@@ -1,49 +1,76 @@
 <template>
-  <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-    <div class="flex items-start justify-between mb-4">
-      <div>
-        <h3 class="text-lg font-semibold text-gray-900">{{ certificate.studentName }}</h3>
-        <p class="text-sm text-gray-600">ID: {{ certificate.studentId }}</p>
+  <div class="group bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700 hover:border-purple-500/50 shadow-lg hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 p-6 overflow-hidden relative">
+    <!-- Background Glow -->
+    <div class="absolute inset-0 bg-gradient-to-br from-purple-500/0 via-transparent to-purple-500/0 group-hover:from-purple-500/5 group-hover:to-purple-500/5 transition-all duration-300" />
+
+    <div class="relative z-10">
+      <!-- Header with Status -->
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div class="flex-1 min-w-0">
+          <h3 class="text-lg font-bold text-white truncate">{{ certificate.studentName }}</h3>
+          <p class="text-xs text-gray-500 font-mono mt-1">ID: {{ certificate.studentId }}</p>
+        </div>
+        
+        <!-- Status Badge -->
+        <span
+          :class="[
+            'px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0',
+            certificate.status === 'active'
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+              : 'bg-red-500/20 text-red-300 border border-red-500/30'
+          ]"
+        >
+          {{ certificate.status }}
+        </span>
       </div>
-      <span
-        :class="[
-          'px-3 py-1 rounded-full text-xs font-semibold',
-          certificate.status === 'active'
-            ? 'bg-green-100 text-green-800'
-            : 'bg-red-100 text-red-800'
-        ]"
-      >
-        {{ certificate.status }}
-      </span>
-    </div>
 
-    <div class="space-y-2 text-sm mb-4 pb-4 border-b border-gray-200">
-      <p><span class="font-medium text-gray-700">Degree:</span> {{ certificate.degree }}</p>
-      <p><span class="font-medium text-gray-700">Institution:</span> {{ certificate.institution }}</p>
-      <p><span class="font-medium text-gray-700">Issue Date:</span> {{ formatDate(certificate.issueDate) }}</p>
-    </div>
+      <!-- Certificate Details -->
+      <div class="space-y-3 text-sm mb-5 pb-5 border-b border-slate-700">
+        <div>
+          <p class="text-xs text-gray-500 mb-1">Degree</p>
+          <p class="text-white font-medium">{{ certificate.degree }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 mb-1">Institution</p>
+          <p class="text-white font-medium">{{ certificate.institution }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 mb-1">Issue Date</p>
+          <p class="text-white font-medium">{{ formatDate(certificate.issueDate) }}</p>
+        </div>
+      </div>
 
-    <div class="space-y-2 text-xs text-gray-600 mb-4">
-      <p class="truncate"><span class="font-medium">Doc Hash:</span> {{ certificate.documentHash }}</p>
-      <p class="truncate"><span class="font-medium">IPFS CID:</span> {{ certificate.ipfsCid }}</p>
-    </div>
+      <!-- Blockchain Info -->
+      <div class="space-y-2 text-xs mb-5 pb-5 border-b border-slate-700">
+        <div>
+          <p class="text-gray-500 mb-1">Doc Hash</p>
+          <p class="text-gray-400 font-mono truncate bg-slate-900/50 px-2 py-1 rounded">{{ certificate.documentHash }}</p>
+        </div>
+        <div>
+          <p class="text-gray-500 mb-1">IPFS CID</p>
+          <p class="text-gray-400 font-mono truncate bg-slate-900/50 px-2 py-1 rounded">{{ certificate.ipfsCid }}</p>
+        </div>
+      </div>
 
-    <div class="flex gap-2">
-      <router-link
-        :to="`/certificate/${certificate.id}`"
-        class="flex-1 px-3 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition text-center"
-      >
-        View Details
-      </router-link>
-      <button
-        @click="emit('verify')"
-        class="flex-1 px-3 py-2 bg-gray-200 text-gray-900 rounded text-sm font-medium hover:bg-gray-300 transition"
-      >
-        Verify
-      </button>
+      <!-- Action Buttons -->
+      <div class="flex gap-3">
+        <router-link
+          :to="`/certificate/${certificate.id}`"
+          class="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-600 text-white rounded-lg text-sm font-semibold transition-all duration-300 text-center"
+        >
+          View Details
+        </router-link>
+        <button
+          @click="emit('verify')"
+          class="flex-1 px-4 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-gray-300 hover:text-white rounded-lg text-sm font-semibold transition-all duration-300 border border-slate-600"
+        >
+          Verify
+        </button>
+      </div>
     </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import type { Certificate } from '@/types';
