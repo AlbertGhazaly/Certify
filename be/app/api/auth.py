@@ -44,7 +44,7 @@ def verify_signature(request: VerifyRequest, db: Session = Depends(get_db)):
         
         # Recreate challenge message
         challenge = crypto_service.create_challenge_message(nonce_record.nonce, request.wallet_address)
-        
+
         # Verify signature and recover public key
         is_valid, public_key_x, public_key_y = crypto_service.verify_wallet_ownership(
             challenge, 
