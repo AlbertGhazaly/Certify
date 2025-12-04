@@ -37,4 +37,7 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  optimizeDeps: {
+    include: ["vue", "vue-router", "pinia"],
+  },
 });

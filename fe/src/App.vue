@@ -1,28 +1,14 @@
 <template>
-  <div id="app">
-    <HelloWorld />
+  <div class="min-h-screen flex flex-col bg-gray-50">
+    <AppHeader />
+    <main class="flex-1">
+      <router-view />
+    </main>
+    <AppFooter />
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-import HelloWorld from './components/HelloWorld.vue';
-
-export default defineComponent({
-  name: 'App',
-  components: {
-    HelloWorld,
-  },
-});
+<script setup lang="ts">
+import AppHeader from '@/components/AppHeader.vue'
+import AppFooter from '@/components/AppFooter.vue'
 </script>
-
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>
