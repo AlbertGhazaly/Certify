@@ -1,0 +1,10 @@
+FastAPI
+uvicorn
+sqlalchemy
+asyncpg
+pydantic
+python-dotenv
+cryptography
+ipfshttpclient
+web3
+psycopg2-binary

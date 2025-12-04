@@ -1,0 +1,8 @@
+DATABASE_URL=postgresql://user:password@db:5432/certify
+APP_NAME=Certify
+SECRET_KEY=your_secret_key
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+IPFS_URL=http://localhost:5001
+SEPOLIA_URL=https://sepolia.infura.io/v3/your_infura_project_id
+VITE_API_URL=http://localhost:8000/api
