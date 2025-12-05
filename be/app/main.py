@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router as user_router
 from app.api.auth import router as auth_router
+from app.api.student import router as student_router
 from app.utils.config import settings
 from app.database.connection import engine, Base
 
@@ -9,6 +10,8 @@ from app.database.connection import engine, Base
 from app.models.user import User
 from app.models.nonce import Nonce
 from app.models.session import Session
+from app.models.student import Student
+from app.models.ijazah import Ijazah
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
@@ -27,6 +30,7 @@ app.add_middleware(
 
 app.include_router(user_router, prefix="/api/users", tags=["users"])
 app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
+app.include_router(student_router, prefix="/api", tags=["students"])
 
 @app.get("/")
 def read_root():
