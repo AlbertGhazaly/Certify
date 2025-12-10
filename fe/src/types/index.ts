@@ -90,3 +90,15 @@ export interface VerificationResult {
   certificate: Certificate | null
   errors: string[]
 }
+
+export interface Student {
+  nim: string
+  nama: string
+  wallet_address: string
+}
+
+export interface StudentCreate {
+  nim: string
+  nama: string
+  wallet_address: string
+}

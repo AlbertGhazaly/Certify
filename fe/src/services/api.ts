@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { Student, StudentCreate } from '@/types';
 
 const apiClient = axios.create({
   baseURL: 'http://localhost:8000/api', // Adjust the base URL as needed
@@ -25,6 +26,36 @@ export const createUser = async (userData) => {
     return response.data;
   } catch (error) {
     console.error('Error creating user:', error);
+    throw error;
+  }
+};
+
+// Student API functions
+export const getStudents = async (): Promise<Student[]> => {
+  try {
+    const response = await apiClient.get('/students');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    throw error;
+  }
+};
+
+export const createStudent = async (studentData: StudentCreate): Promise<Student> => {
+  try {
+    const response = await apiClient.post('/students', studentData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating student:', error);
+    throw error;
+  }
+};
+
+export const deleteStudent = async (walletAddress: string): Promise<void> => {
+  try {
+    await apiClient.delete(`/students/${walletAddress}`);
+  } catch (error) {
+    console.error('Error deleting student:', error);
     throw error;
   }
 };

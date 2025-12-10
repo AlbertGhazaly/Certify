@@ -18,6 +18,9 @@
           <router-link to="/verify" class="text-gray-300 hover:text-purple-400 transition font-medium" :class="{ 'text-purple-400': $route.path === '/verify' }">
             Verify
           </router-link>
+          <router-link v-if="authStore.userRole === 'admin'" to="/admin/students" class="text-gray-300 hover:text-purple-400 transition font-medium" :class="{ 'text-purple-400': $route.path === '/admin/students' }">
+            Students
+          </router-link>
         </nav>
 
         <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
@@ -41,6 +44,9 @@
         </router-link>
         <router-link to="/verify" class="text-xs text-gray-300 hover:text-purple-400 transition font-medium">
           Verify
+        </router-link>
+        <router-link v-if="authStore.userRole === 'admin'" to="/admin/students" class="text-xs text-gray-300 hover:text-purple-400 transition font-medium">
+          Students
         </router-link>
       </nav>
     </div>
