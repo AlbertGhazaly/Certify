@@ -1,12 +1,12 @@
 from sqlalchemy import Column, String
 from app.database.connection import Base
 
-class Ijazah(Base):
+class Certificate(Base):
     """
-    Ijazah (Certificate) table
+    Certificate table
     Stores certificate encryption keys indexed by NIM
     """
-    __tablename__ = "ijazah"
+    __tablename__ = "certificates"
     
     # Id: NIM (primary key)
     id = Column(String, primary_key=True, index=True, name="id")
