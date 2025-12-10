@@ -7,9 +7,13 @@ module.exports = {
     sepolia: {
       url: process.env.INFURA_SEPOLIA_URL,
       accounts: [process.env.PRIVATE_KEY],
+      timeout: 120000
     },
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
+  },
+  sourcify: {
+     enabled: true
   },
 };
