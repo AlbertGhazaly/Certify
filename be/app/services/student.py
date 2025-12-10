@@ -74,6 +74,19 @@ class StudentService:
         return computed_hash == student.hash_val
     
     @staticmethod
+    def get_all_students(db: Session) -> list[dict]:
+        """Get all students with only nim, nama, and wallet_address"""
+        students = db.query(Student.nim, Student.nama, Student.id).all()
+        return [
+            {
+                "nim": student.nim,
+                "nama": student.nama,
+                "wallet_address": student.id
+            }
+            for student in students
+        ]
+    
+    @staticmethod
     def delete_student(db: Session, wallet_address: str) -> bool:
         """Delete student by wallet address"""
         student = db.query(Student).filter(Student.id == wallet_address).first()

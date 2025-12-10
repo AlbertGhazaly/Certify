@@ -24,5 +24,14 @@ class StudentVerify(BaseModel):
     nim: str
     nama: str
 
+class StudentListResponse(BaseModel):
+    """Schema for student list response - minimal info"""
+    nim: str = Field(..., description="Student ID Number (NIM)")
+    nama: str = Field(..., description="Student Name")
+    wallet_address: str = Field(..., description="Wallet address")
+    
+    class Config:
+        from_attributes = True
+
 
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.connection import get_db
-from app.schemas.student import StudentCreate, StudentResponse, StudentVerify
+from app.schemas.student import StudentCreate, StudentResponse, StudentVerify, StudentListResponse
 from app.services.student import StudentService
 
 router = APIRouter()
@@ -47,6 +47,14 @@ async def create_student(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create student: {str(e)}"
         )
+
+@router.get("/students", response_model=list[StudentListResponse])
+async def get_all_students(
+    db: Session = Depends(get_db)
+):
+    """Get all students with only NIM, nama, and wallet address"""
+    students = StudentService.get_all_students(db)
+    return students
 
 @router.get("/students/wallet/{wallet_address}", response_model=StudentResponse)
 async def get_student_by_wallet(
