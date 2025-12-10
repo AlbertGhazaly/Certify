@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy import Column, String
 from app.database.connection import Base
 
 class Ijazah(Base):
