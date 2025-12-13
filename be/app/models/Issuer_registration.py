@@ -1,6 +1,8 @@
 from sqlalchemy import Column, String, BigInteger, Enum
+from sqlalchemy.dialects.postgresql import UUID
 from app.database.connection import Base
 import enum
+import uuid
 
 
 class IssuerStatus(enum.Enum):
@@ -11,7 +13,7 @@ class IssuerStatus(enum.Enum):
 class Issuer_registration(Base):
     __tablename__ = "issuer_registration"
 
-    id_registration = Column(String, primary_key=True, index=True)
+    id_registration = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String, nullable=False)
     wallet_address = Column(String, nullable=False, unique=True, index=True)
     public_key_x = Column(String, nullable=False)

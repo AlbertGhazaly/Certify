@@ -4,6 +4,7 @@ from app.api.routes import router as user_router
 from app.api.auth import router as auth_router
 from app.api.student import router as student_router
 from app.api.certificate import router as certificate_router
+from app.api.issuer_reg import router as issuer_registration_router
 from app.utils.config import settings
 from app.database.connection import engine, Base
 
@@ -32,6 +33,7 @@ app.include_router(user_router, prefix="/api/users", tags=["users"])
 app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
 app.include_router(student_router, prefix="/api", tags=["students"])
 app.include_router(certificate_router, prefix="/api", tags=["certificates"])
+app.include_router(issuer_registration_router, prefix="/api", tags=["issuer-registrations"])
 
 @app.get("/")
 def read_root():
