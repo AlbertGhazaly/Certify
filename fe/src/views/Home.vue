@@ -23,7 +23,7 @@
         <p class="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
           Transparent, secure, and immutable diploma verification powered by blockchain technology. Trusted by institutions worldwide.
         </p>
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div class="flex mb-5 flex-col sm:flex-row items-center justify-center gap-4">
           <router-link to="/explorer" class="w-full sm:w-auto px-8 py-3 bg-accent text-accent-foreground rounded-lg font-semibold hover:bg-accent/90 transition">
             Explore System
           </router-link>
@@ -31,8 +31,13 @@
             Verify Diploma
           </router-link>
         </div>
-      </div>
-    </section>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <router-link to="/explorer" class="w-full sm:w-auto px-8 py-3 bg-accent text-accent-foreground rounded-lg font-semibold hover:bg-accent/90 transition">
+            Register as Issuer
+          </router-link>
+        </div>
+        </div>
+      </section>
 
     <!-- Stats Section -->
     <section class="py-12 px-4 sm:px-6 lg:px-8">

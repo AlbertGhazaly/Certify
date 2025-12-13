@@ -102,3 +102,39 @@ export interface StudentCreate {
   nama: string
   wallet_address: string
 }
+
+export type IssuerStatus = 'pending' | 'accept' | 'reject';
+
+export interface IssuerRegistration {
+  id_registration: string;
+  name: string;
+  wallet_address: string;
+  public_key_x: string;
+  public_key_y: string;
+  created_at: number;
+  status: IssuerStatus;
+}
+
+export interface IssuerRegistrationCreate {
+  name: string;
+  wallet_address: string;
+  public_key_x: string;
+  public_key_y: string;
+}
+
+export interface IssuerRegistrationListResponse {
+  total: number;
+  page: number;
+  page_size: number;
+  items: IssuerRegistration[];
+}
+
+export interface IssuerRegistrationListParams {
+  name?: string;
+  status?: IssuerStatus;
+  start_date?: number;
+  end_date?: number;
+  sort?: 'latest' | 'oldest';
+  page?: number;
+  page_size?: number;
+}

@@ -1,5 +1,11 @@
 import axios from 'axios';
 import type { Student, StudentCreate } from '@/types';
+import type {
+  IssuerRegistration,
+  IssuerRegistrationCreate,
+  IssuerRegistrationListResponse,
+  IssuerRegistrationListParams,
+} from '@/types';
 
 const apiClient = axios.create({
   baseURL: 'http://localhost:8000/api', // Adjust the base URL as needed
@@ -56,6 +62,93 @@ export const deleteStudent = async (walletAddress: string): Promise<void> => {
     await apiClient.delete(`/students/${walletAddress}`);
   } catch (error) {
     console.error('Error deleting student:', error);
+    throw error;
+  }
+};
+
+/* =========================
+   ISSUER REGISTRATION API
+   ========================= */
+
+// Create registration
+export const createIssuerRegistration = async (
+  data: IssuerRegistrationCreate
+): Promise<IssuerRegistration> => {
+  try {
+    const response = await apiClient.post('/issuer-registrations', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating issuer registration:', error);
+    throw error;
+  }
+};
+
+// Get single registration by ID
+export const getIssuerRegistration = async (
+  id: string
+): Promise<IssuerRegistration> => {
+  try {
+    const response = await apiClient.get(`/issuer-registrations/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching issuer registration:', error);
+    throw error;
+  }
+};
+
+// Get all registrations (with filters, pagination, sorting)
+export const getIssuerRegistrations = async (
+  params: IssuerRegistrationListParams = {}
+): Promise<IssuerRegistrationListResponse> => {
+  try {
+    const response = await apiClient.get('/issuer-registrations', {
+      params,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching issuer registrations:', error);
+    throw error;
+  }
+};
+
+// Accept registration
+export const acceptIssuerRegistration = async (
+  id: string
+): Promise<IssuerRegistration> => {
+  try {
+    const response = await apiClient.patch(
+      `/issuer-registrations/${id}/accept`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error accepting issuer registration:', error);
+    throw error;
+  }
+};
+
+// Reject registration
+export const rejectIssuerRegistration = async (
+  id: string
+): Promise<IssuerRegistration> => {
+  try {
+    const response = await apiClient.patch(
+      `/issuer-registrations/${id}/reject`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error rejecting issuer registration:', error);
+    throw error;
+  }
+};
+
+// Delete registration
+export const deleteIssuerRegistration = async (
+  id: string
+): Promise<void> => {
+  try {
+    await apiClient.delete(`/issuer-registrations/${id}`);
+  } catch (error) {
+    console.error('Error deleting issuer registration:', error);
     throw error;
   }
 };
