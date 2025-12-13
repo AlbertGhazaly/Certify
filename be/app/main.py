@@ -13,6 +13,7 @@ from app.models.nonce import Nonce
 from app.models.session import Session
 from app.models.student import Student
 from app.models.certificate import Certificate
+from app.models.Issuer_registration import Issuer_registration
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
