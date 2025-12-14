@@ -1,31 +1,96 @@
 from web3 import Web3
-from typing import Tuple
+from typing import Optional, Dict, List, Tuple
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class ContractService:
     def __init__(self):
-        # Configure your RPC endpoint (e.g., Infura, Alchemy, or local node)
-        self.w3 = Web3(Web3.HTTPProvider('YOUR_RPC_ENDPOINT'))
-        self.contract_address = '0xC0d836b1BA516aF8FA555bcF55963c5c5A9E8728'
+        # Get configuration from environment
+        rpc_url = os.getenv('SEPOLIA_URL', 'https://sepolia.infura.io/v3/your_infura_project_id')
+        self.contract_address = os.getenv('CONTRACT_ADDRESS', '0xC541727abA1192AB5BC91D3489ED9683707724f4')
         
-        # ABI for the role check functions from DiplomaContract
+        self.w3 = Web3(Web3.HTTPProvider(rpc_url))
+        
+        # Full ABI for all read functions
         self.contract_abi = [
+            # Issuer Management - Read Functions
             {
                 "inputs": [{"name": "walletId", "type": "address"}],
-                "name": "isAdmin",
+                "name": "isIssuer",
                 "outputs": [{"name": "", "type": "bool"}],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
-                "inputs": [{"name": "walletId", "type": "address"}],
-                "name": "isInstitution",
-                "outputs": [{"name": "", "type": "bool"}],
+                "inputs": [],
+                "name": "getIssuerList",
+                "outputs": [{"name": "", "type": "address[]"}],
                 "stateMutability": "view",
                 "type": "function"
             },
             {
                 "inputs": [{"name": "walletId", "type": "address"}],
-                "name": "isStudent",
+                "name": "getIssuer",
+                "outputs": [
+                    {"name": "walletId", "type": "address"},
+                    {"name": "publicKey", "type": "string"},
+                    {"name": "isActive", "type": "bool"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            # Certificate Management - Read Functions
+            {
+                "inputs": [{"name": "studentId", "type": "string"}],
+                "name": "getCertificate",
+                "outputs": [
+                    {"name": "_studentId", "type": "string"},
+                    {"name": "certHash", "type": "bytes32"},
+                    {"name": "ipfsCID", "type": "string"},
+                    {"name": "issuerWallets", "type": "address[]"},
+                    {"name": "issueSignatureCount", "type": "uint256"},
+                    {"name": "revokeSignatureCount", "type": "uint256"},
+                    {"name": "isValid", "type": "bool"},
+                    {"name": "timestampIssued", "type": "uint256"},
+                    {"name": "timestampLastUpdated", "type": "uint256"},
+                    {"name": "revokeReason", "type": "string"},
+                    {"name": "requiresAllSignatures", "type": "bool"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"name": "studentId", "type": "string"},
+                    {"name": "issuer", "type": "address"}
+                ],
+                "name": "getIssueSignature",
+                "outputs": [{"name": "", "type": "bytes"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"name": "studentId", "type": "string"},
+                    {"name": "issuer", "type": "address"}
+                ],
+                "name": "getRevokeSignature",
+                "outputs": [{"name": "", "type": "bytes"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"name": "studentId", "type": "string"}],
+                "name": "certificateExistsFor",
+                "outputs": [{"name": "", "type": "bool"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"name": "studentId", "type": "string"}],
+                "name": "isCertificateValid",
                 "outputs": [{"name": "", "type": "bool"}],
                 "stateMutability": "view",
                 "type": "function"
@@ -37,33 +102,155 @@ class ContractService:
             abi=self.contract_abi
         )
     
-    def get_user_role(self, wallet_address: str) -> str:
+    # ========== ISSUER READ FUNCTIONS ==========
+    
+    def is_issuer(self, wallet_address: str) -> bool:
         """
-        Check wallet address against contract and return role
-        Priority: admin (institution or admin) > student > verifier
-        Returns: 'admin', 'student', or 'verifier'
+        Check if an address is an active issuer
         """
         try:
             checksum_address = Web3.to_checksum_address(wallet_address)
-            
-            # Check institution first (highest priority)
-            is_institution = self.contract.functions.isInstitution(checksum_address).call()
-            if is_institution:
+            return self.contract.functions.isIssuer(checksum_address).call()
+        except Exception as e:
+            print(f"Error checking issuer status: {str(e)}")
+            return False
+    
+    def get_user_role(self, wallet_address: str) -> str:
+        """
+        Check wallet address against contract and return role
+        Returns: 'admin' or 'verifier'
+        """
+        try:
+            if self.is_issuer(wallet_address):
                 return "admin"
-            
-            # Check admin
-            is_admin = self.contract.functions.isAdmin(checksum_address).call()
-            if is_admin:
-                return "admin"
-            
-            # Check student
-            is_student = self.contract.functions.isStudent(checksum_address).call()
-            if is_student:
-                return "student"
-            
-            # Default role if none of the above
             return "verifier"
         except Exception as e:
-            # If contract read fails, default to verifier
             print(f"Contract read error: {str(e)}")
             return "verifier"
+    
+    def get_issuer_list(self) -> List[str]:
+        """
+        Get list of all issuer addresses
+        """
+        try:
+            issuers = self.contract.functions.getIssuerList().call()
+            return [str(issuer) for issuer in issuers]
+        except Exception as e:
+            print(f"Error getting issuer list: {str(e)}")
+            return []
+    
+    def get_issuer(self, wallet_address: str) -> Optional[Dict]:
+        """
+        Get issuer details
+        Returns: {walletId, publicKey, isActive}
+        """
+        try:
+            checksum_address = Web3.to_checksum_address(wallet_address)
+            issuer = self.contract.functions.getIssuer(checksum_address).call()
+            return {
+                "walletId": issuer[0],
+                "publicKey": issuer[1],
+                "isActive": issuer[2]
+            }
+        except Exception as e:
+            print(f"Error getting issuer: {str(e)}")
+            return None
+    
+    # ========== CERTIFICATE READ FUNCTIONS ==========
+    
+    def certificate_exists(self, student_id: str) -> bool:
+        """
+        Check if a certificate exists for a student ID
+        """
+        try:
+            return self.contract.functions.certificateExistsFor(student_id).call()
+        except Exception as e:
+            print(f"Error checking certificate existence: {str(e)}")
+            return False
+    
+    def is_certificate_valid(self, student_id: str) -> bool:
+        """
+        Check if a certificate is valid (not revoked)
+        """
+        try:
+            return self.contract.functions.isCertificateValid(student_id).call()
+        except Exception as e:
+            print(f"Error checking certificate validity: {str(e)}")
+            return False
+    
+    def get_certificate(self, student_id: str) -> Optional[Dict]:
+        """
+        Get full certificate details
+        Returns: Certificate data dictionary or None if not found
+        """
+        try:
+            cert = self.contract.functions.getCertificate(student_id).call()
+            return {
+                "studentId": cert[0],
+                "certHash": cert[1].hex(),
+                "ipfsCID": cert[2],
+                "issuerWallets": [str(addr) for addr in cert[3]],
+                "issueSignatureCount": cert[4],
+                "revokeSignatureCount": cert[5],
+                "isValid": cert[6],
+                "timestampIssued": cert[7],
+                "timestampLastUpdated": cert[8],
+                "revokeReason": cert[9],
+                "requiresAllSignatures": cert[10]
+            }
+        except Exception as e:
+            print(f"Error getting certificate: {str(e)}")
+            return None
+    
+    def get_issue_signature(self, student_id: str, issuer_address: str) -> Optional[str]:
+        """
+        Get the issue signature from a specific issuer for a certificate
+        """
+        try:
+            checksum_address = Web3.to_checksum_address(issuer_address)
+            signature = self.contract.functions.getIssueSignature(student_id, checksum_address).call()
+            return signature.hex() if signature else None
+        except Exception as e:
+            print(f"Error getting issue signature: {str(e)}")
+            return None
+    
+    def get_revoke_signature(self, student_id: str, issuer_address: str) -> Optional[str]:
+        """
+        Get the revoke signature from a specific issuer for a certificate
+        """
+        try:
+            checksum_address = Web3.to_checksum_address(issuer_address)
+            signature = self.contract.functions.getRevokeSignature(student_id, checksum_address).call()
+            return signature.hex() if signature else None
+        except Exception as e:
+            print(f"Error getting revoke signature: {str(e)}")
+            return None
+    
+    def get_all_certificate_signatures(self, student_id: str) -> Dict[str, List[Dict]]:
+        """
+        Get all signatures (issue and revoke) for a certificate
+        """
+        try:
+            cert = self.get_certificate(student_id)
+            if not cert:
+                return {"issueSignatures": [], "revokeSignatures": []}
+            
+            issue_sigs = []
+            revoke_sigs = []
+            
+            for issuer in cert["issuerWallets"]:
+                issue_sig = self.get_issue_signature(student_id, issuer)
+                if issue_sig:
+                    issue_sigs.append({"issuer": issuer, "signature": issue_sig})
+                
+                revoke_sig = self.get_revoke_signature(student_id, issuer)
+                if revoke_sig:
+                    revoke_sigs.append({"issuer": issuer, "signature": revoke_sig})
+            
+            return {
+                "issueSignatures": issue_sigs,
+                "revokeSignatures": revoke_sigs
+            }
+        except Exception as e:
+            print(f"Error getting all signatures: {str(e)}")
+            return {"issueSignatures": [], "revokeSignatures": []}

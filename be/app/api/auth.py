@@ -5,10 +5,12 @@ from app.database.connection import get_db
 from app.services.crypto import AuthCryptoService
 from app.services.nonce import NonceService
 from app.services.session import SessionService
+from app.services.read_contract import ContractService
 
 router = APIRouter(tags=["authentication"])
 
 crypto_service = AuthCryptoService()
+contract_service = ContractService()
 
 @router.post("/challenge", response_model=ChallengeResponse)
 def request_challenge(request: ChallengeRequest, db: Session = Depends(get_db)):
@@ -35,6 +37,7 @@ def verify_signature(request: VerifyRequest, db: Session = Depends(get_db)):
     """
     Step 2: Verify signature and authenticate user
     Client signs challenge with private key, server verifies and creates session
+    Only issuers can authenticate - validated against Sepolia contract
     """
     try:
         # Get stored nonce
@@ -55,16 +58,40 @@ def verify_signature(request: VerifyRequest, db: Session = Depends(get_db)):
         if not is_valid:
             raise HTTPException(status_code=401, detail="Invalid signature or wallet address mismatch")
         
+        # Validate issuer status from Sepolia contract
+        is_issuer = contract_service.is_issuer(request.wallet_address)
+        if not is_issuer:
+            # Delete used nonce
+            NonceService.delete_nonce(db, request.wallet_address)
+            raise HTTPException(
+                status_code=403, 
+                detail="Access denied. Only issuers can authenticate."
+            )
+        
         # Delete used nonce
         NonceService.delete_nonce(db, request.wallet_address)
         
-        # Create session
-        session = SessionService.create_session(db, request.wallet_address, public_key_x, public_key_y)
+        # Create JWT token for issuer
+        role = "issuer"
+        jwt_token = SessionService.create_jwt_token(request.wallet_address, role)
+        
+        # Create session with JWT token
+        session = SessionService.create_session(
+            db, 
+            request.wallet_address, 
+            public_key_x, 
+            public_key_y,
+            role,
+            jwt_token
+        )
         
         return VerifyResponse(
             success=True,
             message="Authentication successful",
-            session_token=request.wallet_address  # In production, use JWT or similar
+            session_token=request.wallet_address,
+            jwt_token=jwt_token,
+            role=role,
+            wallet_address=request.wallet_address
         )
     except HTTPException:
         raise
@@ -90,13 +117,39 @@ def logout(request: LogoutRequest, db: Session = Depends(get_db)):
 @router.get("/session/{wallet_address}")
 def get_session(wallet_address: str, db: Session = Depends(get_db)):
     """
-    Check if user has active session
+    Check if user has active session and validate issuer status
     """
     session = SessionService.get_session(db, wallet_address)
     if session:
-        return {
-            "active": True,
-            "wallet_address": session.wallet_address,
-            "created_at": session.created_at
-        }
+        # Validate token
+        payload = SessionService.verify_jwt_token(session.jwt_token)
+        if payload:
+            # Double-check issuer status from contract
+            is_issuer = contract_service.is_issuer(wallet_address)
+            if is_issuer:
+                return {
+                    "active": True,
+                    "wallet_address": session.wallet_address,
+                    "role": session.role,
+                    "created_at": session.created_at
+                }
+    
     return {"active": False}
+
+@router.get("/validate-token")
+def validate_token(token: str, db: Session = Depends(get_db)):
+    """
+    Validate JWT token and return session info
+    """
+    session = SessionService.validate_session_token(db, token)
+    if session:
+        # Validate issuer status from contract
+        is_issuer = contract_service.is_issuer(session.wallet_address)
+        if is_issuer:
+            return {
+                "valid": True,
+                "wallet_address": session.wallet_address,
+                "role": session.role
+            }
+    
+    return {"valid": False}

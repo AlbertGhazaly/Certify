@@ -13,3 +13,6 @@ eth-account
 eth-keys
 eth-utils
 python-multipart
+python-jose[cryptography]
+passlib
+ecdsa
