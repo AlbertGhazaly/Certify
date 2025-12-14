@@ -39,8 +39,8 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: "/admin/issuer-registrations",
-    component: () => import("@/views/IssuerPage.vue"),
-    name: "issuer-reg",
+    component: () => import("@/views/AdminIssuerPage.vue"),
+    name: "admin-issuer-registrations",
     // meta: { requiresAuth: true, requiresRole: "admin" },
   },
   {

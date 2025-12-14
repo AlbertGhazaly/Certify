@@ -118,8 +118,8 @@ export interface IssuerRegistration {
 export interface IssuerRegistrationCreate {
   name: string;
   wallet_address: string;
-  public_key_x: string;
-  public_key_y: string;
+  // public_key_x: string;
+  // public_key_y: string;
 }
 
 export interface IssuerRegistrationListResponse {

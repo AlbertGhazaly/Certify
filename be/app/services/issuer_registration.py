@@ -4,7 +4,9 @@ from sqlalchemy import and_, asc, desc
 from datetime import datetime
 
 from app.models.Issuer_registration import Issuer_registration, IssuerStatus
-
+from app.services.session import (
+    SessionService
+)
 
 class IssuerRegistrationService:
     """Service for managing issuer registrations"""
@@ -14,20 +16,22 @@ class IssuerRegistrationService:
         db: Session,
         name: str,
         wallet_address: str,
-        public_key_x: str,
-        public_key_y: str,
+        # public_key_x: str,
+        # public_key_y: str,
         created_at: Optional[int] = None,
     ) -> Issuer_registration:
         """Create new issuer registration (default status: pending)"""
 
         if created_at is None:
             created_at = int(datetime.utcnow().timestamp())
-
+        session = SessionService.get_session(db, wallet_address)
+        if not session:
+            raise Exception("No active session found for the given wallet address.")
         registration = Issuer_registration(
             name=name,
             wallet_address=wallet_address,
-            public_key_x=public_key_x,
-            public_key_y=public_key_y,
+            public_key_x=session.public_key_x,
+            public_key_y=session.public_key_y,
             created_at=created_at,
             status=IssuerStatus.pending,
         )
@@ -48,6 +52,16 @@ class IssuerRegistrationService:
         return (
             db.query(Issuer_registration)
             .filter(Issuer_registration.id_registration == id_registration)
+            .first()
+        )
+    
+    @staticmethod
+    def get_by_wallet(
+        db: Session, wallet_address: str
+    ) -> Optional[Issuer_registration]:
+        return (
+            db.query(Issuer_registration)
+            .filter(Issuer_registration.wallet_address == wallet_address)
             .first()
         )
 

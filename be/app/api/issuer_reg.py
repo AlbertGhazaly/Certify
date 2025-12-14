@@ -22,13 +22,21 @@ def create_registration(
     data: IssuerRegistrationCreate,
     db: Session = Depends(get_db),
 ):
+    existing_registration = IssuerRegistrationService.get_by_wallet(
+        db, data.wallet_address
+    )
+    if existing_registration:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Issuer registration with this wallet address already exists",
+        )
     try:
         return IssuerRegistrationService.create_registration(
             db=db,
             name=data.name,
             wallet_address=data.wallet_address,
-            public_key_x=data.public_key_x,
-            public_key_y=data.public_key_y,
+            # public_key_x=data.public_key_x,
+            # public_key_y=data.public_key_y,
         )
     except Exception as e:
         raise HTTPException(

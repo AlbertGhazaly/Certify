@@ -6,8 +6,8 @@ from uuid import UUID
 class IssuerRegistrationCreate(BaseModel):
     name: str
     wallet_address: str
-    public_key_x: str
-    public_key_y: str
+    # public_key_x: str
+    # public_key_y: str
 
 
 class IssuerRegistrationResponse(BaseModel):

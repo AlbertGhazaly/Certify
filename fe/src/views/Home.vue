@@ -32,11 +32,18 @@
           </router-link>
         </div>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <router-link to="/explorer" class="w-full sm:w-auto px-8 py-3 bg-accent text-accent-foreground rounded-lg font-semibold hover:bg-accent/90 transition">
+          <button
+            @click="openModal"
+            class="w-full sm:w-auto px-8 py-3 bg-accent text-accent-foreground rounded-lg font-semibold hover:bg-accent/90 transition"
+          >
             Register as Issuer
-          </router-link>
+          </button>
         </div>
-        </div>
+        <IssuerRegistrationModal
+          v-if="showModal"
+          @close="showModal = false"
+        />
+      </div>
       </section>
 
     <!-- Stats Section -->
@@ -172,4 +179,56 @@
 
 
 <script setup lang="ts">
-</script>
+  import { ref, computed, onMounted } from "vue"
+  import { createIssuerRegistration } from "../services/api"
+  import IssuerRegistrationModal from "@/components/IssuerRegistrationModal.vue"
+  
+  const showModal = ref(false)
+  const loading = ref(false)
+  const success = ref(false)
+  const error = ref<string | null>(null)
+  
+  const name = ref("")
+  const walletAddress = ref("")
+  
+  onMounted(() => {
+    walletAddress.value = localStorage.getItem("wallet_address") || ""
+  })
+  
+  const isFormValid = computed(() => {
+    return name.value.trim() !== "" && walletAddress.value !== ""
+  })
+  
+  const openModal = () => {
+    showModal.value = true
+    success.value = false
+    error.value = null
+  }
+  
+  const closeModal = () => {
+    showModal.value = false
+  }
+  
+  const submit = async () => {
+    if (!isFormValid.value || loading.value) return
+  
+    loading.value = true
+    error.value = null
+  
+    try {
+      await createIssuerRegistration({
+        name: name.value,
+        wallet_address: walletAddress.value
+      })
+  
+      success.value = true
+      name.value = ""
+    } catch (e: any) {
+      error.value =
+        e?.response?.data?.detail ||
+        "Registration failed. Please try again."
+    } finally {
+      loading.value = false
+    }
+  }
+  </script>
