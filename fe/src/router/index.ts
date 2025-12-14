@@ -14,6 +14,12 @@ const routes: RouteRecordRaw[] = [
     name: "login",
   },
   {
+    path: "/admin",
+    component: () => import("@/views/AdminPage.vue"),
+    name: "admin-home",
+    meta: { requiresAuth: true, requiresRole: "admin" },
+  },
+  {
     path: "/admin/issue",
     component: () => import("@/views/AdminIssuePage.vue"),
     name: "admin-issue",
@@ -29,6 +35,12 @@ const routes: RouteRecordRaw[] = [
     path: "/admin/students",
     component: () => import("@/views/StudentsPage.vue"),
     name: "students",
+    // meta: { requiresAuth: true, requiresRole: "admin" },
+  },
+  {
+    path: "/admin/issuer-registrations",
+    component: () => import("@/views/AdminIssuerPage.vue"),
+    name: "admin-issuer-registrations",
     // meta: { requiresAuth: true, requiresRole: "admin" },
   },
   {
@@ -55,7 +67,8 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-
+  // console.log("isAuthenticated:", authStore.isAuthenticated)
+  // console.log("userRole:", authStore.userRole)
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next("/login")
   } else if (to.meta.requiresRole && authStore.userRole !== to.meta.requiresRole) {

@@ -23,7 +23,7 @@
         <p class="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
           Transparent, secure, and immutable diploma verification powered by blockchain technology. Trusted by institutions worldwide.
         </p>
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div class="flex mb-5 flex-col sm:flex-row items-center justify-center gap-4">
           <router-link to="/explorer" class="w-full sm:w-auto px-8 py-3 bg-accent text-accent-foreground rounded-lg font-semibold hover:bg-accent/90 transition">
             Explore System
           </router-link>
@@ -31,8 +31,20 @@
             Verify Diploma
           </router-link>
         </div>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button
+            @click="openModal"
+            class="w-full sm:w-auto px-8 py-3 bg-accent text-accent-foreground rounded-lg font-semibold hover:bg-accent/90 transition"
+          >
+            Register as Issuer
+          </button>
+        </div>
+        <IssuerRegistrationModal
+          v-if="showModal"
+          @close="showModal = false"
+        />
       </div>
-    </section>
+      </section>
 
     <!-- Stats Section -->
     <section class="py-12 px-4 sm:px-6 lg:px-8">
@@ -120,7 +132,7 @@
               <li class="flex gap-2"><span class="text-accent">✓</span> Revoke diplomas</li>
               <li class="flex gap-2"><span class="text-accent">✓</span> Manage records</li>
             </ul>
-            <router-link to="/admin/issue" class="block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-center font-medium hover:bg-accent/90 transition">
+            <router-link to="/admin" class="block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-center font-medium hover:bg-accent/90 transition">
               Go to Admin
             </router-link>
           </div>
@@ -167,4 +179,56 @@
 
 
 <script setup lang="ts">
-</script>
+  import { ref, computed, onMounted } from "vue"
+  import { createIssuerRegistration } from "../services/api"
+  import IssuerRegistrationModal from "@/components/IssuerRegistrationModal.vue"
+  
+  const showModal = ref(false)
+  const loading = ref(false)
+  const success = ref(false)
+  const error = ref<string | null>(null)
+  
+  const name = ref("")
+  const walletAddress = ref("")
+  
+  onMounted(() => {
+    walletAddress.value = localStorage.getItem("wallet_address") || ""
+  })
+  
+  const isFormValid = computed(() => {
+    return name.value.trim() !== "" && walletAddress.value !== ""
+  })
+  
+  const openModal = () => {
+    showModal.value = true
+    success.value = false
+    error.value = null
+  }
+  
+  const closeModal = () => {
+    showModal.value = false
+  }
+  
+  const submit = async () => {
+    if (!isFormValid.value || loading.value) return
+  
+    loading.value = true
+    error.value = null
+  
+    try {
+      await createIssuerRegistration({
+        name: name.value,
+        wallet_address: walletAddress.value
+      })
+  
+      success.value = true
+      name.value = ""
+    } catch (e: any) {
+      error.value =
+        e?.response?.data?.detail ||
+        "Registration failed. Please try again."
+    } finally {
+      loading.value = false
+    }
+  }
+  </script>

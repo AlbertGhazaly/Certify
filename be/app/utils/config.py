@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     database_url: str
 
     class Config:
+        extra = "allow"
         env_file = ".env" 
 
 settings = Settings()

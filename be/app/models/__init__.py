@@ -3,5 +3,6 @@ from app.models.certificate import Certificate
 from app.models.nonce import Nonce
 from app.models.session import Session
 from app.models.user import User
+from app.models.Issuer_registration import Issuer_registration
 
-__all__ = ["Student", "Certificate", "Nonce", "Session", "User"]
+__all__ = ["Student", "Certificate", "Nonce", "Session", "User", "Issuer_registration"]

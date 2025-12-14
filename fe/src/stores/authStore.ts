@@ -4,14 +4,24 @@ import type { User } from "@/types"
 import axios from "axios"
 
 const API_URL = "http://localhost:8000/api"
+const STORAGE_KEY = "auth"
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null)
   const walletAddress = ref<string>("")
+  const isReady = ref(false)
 
   const isAuthenticated = computed(() => user.value?.isAuthenticated ?? false)
   const userRole = computed(() => user.value?.role)
   const userAddress = computed(() => user.value?.address)
+
+  const init = () => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      user.value = JSON.parse(saved)
+    }
+    isReady.value = true
+  }
 
   const requestChallenge = async (address: string): Promise<{ challenge: string; nonce: string }> => {
     try {
@@ -33,11 +43,13 @@ export const useAuthStore = defineStore("auth", () => {
       })
       
       if (response.data.success) {
+        // console.log("response: ", response.data)
         user.value = {
           address: address,
-          role: "student", // Default role, can be fetched from backend
+          role: "admin", // Default role, can be fetched from backend
           isAuthenticated: true
         }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(user.value))
         return true
       }
       return false
@@ -58,6 +70,7 @@ export const useAuthStore = defineStore("auth", () => {
     }
     user.value = null
     walletAddress.value = ""
+    localStorage.removeItem(STORAGE_KEY)
   }
 
   const checkSession = async (address: string): Promise<boolean> => {
@@ -74,6 +87,7 @@ export const useAuthStore = defineStore("auth", () => {
     isAuthenticated,
     userRole,
     userAddress,
+    init,
     requestChallenge,
     verifySignature,
     logout,
