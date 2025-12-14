@@ -125,7 +125,7 @@
               <li class="flex gap-2"><span class="text-accent">✓</span> Revoke diplomas</li>
               <li class="flex gap-2"><span class="text-accent">✓</span> Manage records</li>
             </ul>
-            <router-link to="/admin/issue" class="block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-center font-medium hover:bg-accent/90 transition">
+            <router-link to="/admin" class="block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-center font-medium hover:bg-accent/90 transition">
               Go to Admin
             </router-link>
           </div>

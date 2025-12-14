@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
     <div class="max-w-2xl mx-auto">
-      <router-link to="/" class="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-8">
+      <router-link to="/admin" class="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-8">
         <span>←</span> Back
       </router-link>
 
