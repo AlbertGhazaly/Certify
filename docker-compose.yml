@@ -9,7 +9,7 @@ services:
       - ./fe/src:/app/src
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://backend:8000
+      - VITE_API_URL=$BACKEND_URL
     depends_on:
       - backend
 
@@ -23,7 +23,8 @@ services:
       - ./be/app:/app/app
       - /app/__pycache__
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/mydatabase
+      - DATABASE_URL=$DATABASE_URL
+      - RPC_ENDPOINT=$SEPOLIA_URL
     depends_on:
       - db
 
