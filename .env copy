@@ -6,4 +6,4 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 IPFS_URL=http://localhost:5001
 SEPOLIA_URL=https://sepolia.infura.io/v3/your_infura_project_id
 CONTRACT_ADDRESS=0xC541727abA1192AB5BC91D3489ED9683707724f4
-VITE_API_URL=http://localhost:8000/api
+BACKEND_URL=http://localhost:8000/api

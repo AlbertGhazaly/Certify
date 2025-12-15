@@ -32,7 +32,7 @@ class AuthCryptoService:
             
             # Compare addresses (case-insensitive)
             is_valid = recovered_address.lower() == wallet_address.lower()
-            
+            print(is_valid)
             if is_valid:
                 # If valid, extract public key from signature
                 # Parse signature to get v, r, s

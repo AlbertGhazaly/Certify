@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router"
 import { useAuthStore } from "@/stores/authStore"
 
-
 const routes: RouteRecordRaw[] = [
   {
     path: "/",
@@ -17,31 +16,31 @@ const routes: RouteRecordRaw[] = [
     path: "/admin",
     component: () => import("@/views/AdminPage.vue"),
     name: "admin-home",
-    meta: { requiresAuth: true, requiresRole: "admin" },
+    meta: { requiresAuth: true },
   },
   {
     path: "/admin/issue",
     component: () => import("@/views/AdminIssuePage.vue"),
     name: "admin-issue",
-    meta: { requiresAuth: true, requiresRole: "admin" },
+    meta: { requiresAuth: true },
   },
   {
     path: "/admin/revoke",
     component: () => import("@/views/AdminRevokePage.vue"),
     name: "admin-revoke",
-    meta: { requiresAuth: true, requiresRole: "admin" },
+    meta: { requiresAuth: true },
   },
   {
     path: "/admin/students",
     component: () => import("@/views/StudentsPage.vue"),
     name: "students",
-    // meta: { requiresAuth: true, requiresRole: "admin" },
+    meta: { requiresAuth: true },
   },
   {
     path: "/admin/issuer-registrations",
     component: () => import("@/views/AdminIssuerPage.vue"),
     name: "admin-issuer-registrations",
-    // meta: { requiresAuth: true, requiresRole: "admin" },
+    meta: { requiresAuth: true },
   },
   {
     path: "/verify",
@@ -65,15 +64,25 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
-  // console.log("isAuthenticated:", authStore.isAuthenticated)
-  // console.log("userRole:", authStore.userRole)
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next("/login")
-  } else if (to.meta.requiresRole && authStore.userRole !== to.meta.requiresRole) {
-    next("/")
+  
+  // Wait for store to be ready
+  if (!authStore.isReady) {
+    await authStore.init()
+  }
+
+  // Check if route requires authentication
+  if (to.meta.requiresAuth) {
+    if (!authStore.isAuthenticated) {
+      // Not authenticated, redirect to login
+      next("/login")
+    } else {
+      // Authenticated (already validated as issuer in backend)
+      next()
+    }
   } else {
+    // Public route
     next()
   }
 })

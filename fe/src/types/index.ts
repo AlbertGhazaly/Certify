@@ -1,14 +1,21 @@
-export interface Users {
-    id: number;
-    role: "admin" | "verifier" | "student";
-    username: string;
-    publicKeyX: string;
-    publicKeyY: string;
+export interface User {
+  address: string
+  role: "issuer"
+  isAuthenticated: boolean
 }
 
 export interface AuthResponse {
-    accessToken: string;
-    refreshToken: string;
+  success: boolean
+  message: string
+  session_token?: string
+  jwt_token?: string
+  role?: string
+  wallet_address?: string
+}
+
+export interface ChallengeResponse {
+  challenge: string
+  nonce: string
 }
 
 export interface LocalStorageKeys {
@@ -20,13 +27,7 @@ export interface IPFSResponse {
     cid: string;
     path: string;
 }
-// Core types for the digital diploma system
 
-export interface User {
-  address: string
-  role: "admin" | "verifier" | "student"
-  isAuthenticated: boolean
-}
 
 export interface Certificate {
   id: string

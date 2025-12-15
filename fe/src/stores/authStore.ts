@@ -5,20 +5,48 @@ import axios from "axios"
 
 const API_URL = "http://localhost:8000/api"
 const STORAGE_KEY = "auth"
+const TOKEN_KEY = "jwt_token"
 
 export const useAuthStore = defineStore("auth", () => {
   const user = ref<User | null>(null)
   const walletAddress = ref<string>("")
+  const jwtToken = ref<string>("")
   const isReady = ref(false)
 
   const isAuthenticated = computed(() => user.value?.isAuthenticated ?? false)
   const userRole = computed(() => user.value?.role)
   const userAddress = computed(() => user.value?.address)
 
-  const init = () => {
+  // Setup axios interceptor to include JWT token in all requests
+  const setupAxiosInterceptor = () => {
+    axios.interceptors.request.use(
+      (config) => {
+        if (jwtToken.value) {
+          config.headers.Authorization = `Bearer ${jwtToken.value}`
+        }
+        return config
+      },
+      (error) => {
+        return Promise.reject(error)
+      }
+    )
+  }
+
+  const init = async () => {
     const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
+    const token = localStorage.getItem(TOKEN_KEY)
+    
+    if (saved && token) {
       user.value = JSON.parse(saved)
+      jwtToken.value = token
+      setupAxiosInterceptor()
+      
+      // Validate token with backend
+      const isValid = await validateToken(token)
+      if (!isValid) {
+        // Token invalid, clear session
+        await logout()
+      }
     }
     isReady.value = true
   }
@@ -43,18 +71,40 @@ export const useAuthStore = defineStore("auth", () => {
       })
       
       if (response.data.success) {
-        // console.log("response: ", response.data)
+        // Store JWT token
+        jwtToken.value = response.data.jwt_token
+        localStorage.setItem(TOKEN_KEY, response.data.jwt_token)
+        
+        // Store user info
         user.value = {
-          address: address,
-          role: "admin", // Default role, can be fetched from backend
+          address: response.data.wallet_address,
+          role: response.data.role, // Should be "issuer"
           isAuthenticated: true
         }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(user.value))
+        
+        // Setup axios interceptor with new token
+        setupAxiosInterceptor()
+        
         return true
       }
       return false
-    } catch (error) {
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        throw new Error("Access denied. Only issuers can authenticate.")
+      }
       throw new Error("Signature verification failed")
+    }
+  }
+
+  const validateToken = async (token: string): Promise<boolean> => {
+    try {
+      const response = await axios.get(`${API_URL}/auth/validate-token`, {
+        params: { token }
+      })
+      return response.data.valid
+    } catch (error) {
+      return false
     }
   }
 
@@ -70,7 +120,9 @@ export const useAuthStore = defineStore("auth", () => {
     }
     user.value = null
     walletAddress.value = ""
+    jwtToken.value = ""
     localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(TOKEN_KEY)
   }
 
   const checkSession = async (address: string): Promise<boolean> => {
@@ -84,12 +136,15 @@ export const useAuthStore = defineStore("auth", () => {
 
   return {
     user,
+    jwtToken,
     isAuthenticated,
     userRole,
     userAddress,
+    isReady,
     init,
     requestChallenge,
     verifySignature,
+    validateToken,
     logout,
     checkSession
   }

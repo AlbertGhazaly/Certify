@@ -40,6 +40,7 @@ def verify_signature(request: VerifyRequest, db: Session = Depends(get_db)):
     Only issuers can authenticate - validated against Sepolia contract
     """
     try:
+        
         # Get stored nonce
         nonce_record = NonceService.get_nonce(db, request.wallet_address)
         if not nonce_record:
@@ -54,10 +55,9 @@ def verify_signature(request: VerifyRequest, db: Session = Depends(get_db)):
             request.signature, 
             request.wallet_address
         )
-        
+    
         if not is_valid:
             raise HTTPException(status_code=401, detail="Invalid signature or wallet address mismatch")
-        
         # Validate issuer status from Sepolia contract
         is_issuer = contract_service.is_issuer(request.wallet_address)
         if not is_issuer:

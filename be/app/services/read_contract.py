@@ -10,7 +10,8 @@ class ContractService:
         # Get configuration from environment
         rpc_url = os.getenv('SEPOLIA_URL', 'https://sepolia.infura.io/v3/your_infura_project_id')
         self.contract_address = os.getenv('CONTRACT_ADDRESS', '0xC541727abA1192AB5BC91D3489ED9683707724f4')
-        
+        print(f"Loaded SEPOLIA_URL: {rpc_url}")
+        print(f"Loaded CONTRACT_ADDRESS: {self.contract_address}")
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         
         # Full ABI for all read functions
