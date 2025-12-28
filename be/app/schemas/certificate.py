@@ -26,9 +26,10 @@ class VerifyCertificateRequest(BaseModel):
 class VerifyCertificateResponse(BaseModel):
     success: bool
     valid: bool
+    message: str
     certificate_text: Optional[str] = None
     ipfs_cid: Optional[str] = None
-    message: str
+    file_url: Optional[str] = None
 
 class SignCertificateRequest(BaseModel):
     student_id: str

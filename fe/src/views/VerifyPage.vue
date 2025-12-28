@@ -48,7 +48,26 @@
         </h2>
 
         <p class="mb-4">{{ result.message }}</p>
+        <div v-if="result.file_url" class="mt-4">
+          <p class="text-sm font-semibold">Certificate URL:</p>
 
+          <a
+            :href="result.file_url"
+            target="_blank"
+            class="text-blue-600 underline break-all"
+          >
+            {{ result.file_url }}
+          </a>
+
+          <a
+            :href="result.file_url"
+            target="_blank"
+            download
+            class="inline-block mt-2 px-4 py-2 bg-green-600 text-white rounded-lg"
+          >
+            Download Encrypted Certificate
+          </a>
+        </div>
         <pre
           v-if="result.certificate_text"
           class="bg-muted p-4 rounded text-sm whitespace-pre-wrap"

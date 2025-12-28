@@ -120,22 +120,16 @@ async def verify_certificate(
     request: VerifyCertificateRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Verify and decrypt a certificate
-    """
     try:
-        # 1. Check if certificate exists on blockchain
         if not contract_service.certificate_exists(request.student_id):
             return VerifyCertificateResponse(
                 success=False,
                 valid=False,
                 message="Certificate not found on blockchain"
             )
-        
-        # 2. Check if certificate is valid (not revoked)
+
         is_valid = contract_service.is_certificate_valid(request.student_id)
-        
-        # 3. Get certificate data from blockchain
+
         cert_data = contract_service.get_certificate(request.student_id)
         if not cert_data:
             return VerifyCertificateResponse(
@@ -143,58 +137,62 @@ async def verify_certificate(
                 valid=False,
                 message="Failed to retrieve certificate data"
             )
-        
-        ipfs_cid = cert_data['ipfsCID']
-        
-        # 4. Download encrypted file from IPFS
+
+        ipfs_cid = cert_data["ipfsCID"]
+        file_url = ipfs_service.get_gateway_url(ipfs_cid)
+
         encrypted_data = ipfs_service.get_file(ipfs_cid)
         if not encrypted_data:
             return VerifyCertificateResponse(
                 success=False,
                 valid=is_valid,
                 message="Failed to retrieve certificate from IPFS",
-                ipfs_cid=ipfs_cid
+                ipfs_cid=ipfs_cid,
+                file_url=file_url
             )
+
         certificate_key = certificate_service.get_certificate_by_nim(db, request.student_id)
         if not certificate_key:
-            return "AES Key tidak ditemukan di database"
+            raise HTTPException(status_code=404, detail="AES key not found")
+
         aes_key = certificate_key.aes_key
-        
-        # 5. Decrypt certificate
+
         try:
             decrypted_data = encryption_service.decrypt(encrypted_data, aes_key)
-            certificate_text = decrypted_data.decode('utf-8')
-        except Exception as e:
+            certificate_text = decrypted_data.decode("utf-8")
+        except Exception:
             return VerifyCertificateResponse(
                 success=False,
                 valid=is_valid,
                 message="Invalid decryption key",
-                ipfs_cid=ipfs_cid
+                ipfs_cid=ipfs_cid,
+                file_url=file_url
             )
-        
-        # 6. Verify hash
+
         calculated_hash = hashlib.sha256(decrypted_data).hexdigest()
-        blockchain_hash = cert_data['certHash']
-        
+        blockchain_hash = cert_data["certHash"]
+
         if calculated_hash != blockchain_hash:
             return VerifyCertificateResponse(
                 success=False,
                 valid=False,
-                message="Certificate hash mismatch - data may be corrupted",
-                ipfs_cid=ipfs_cid
+                message="Certificate hash mismatch",
+                ipfs_cid=ipfs_cid,
+                file_url=file_url
             )
-        
+
         return VerifyCertificateResponse(
             success=True,
             valid=is_valid,
             certificate_text=certificate_text,
             ipfs_cid=ipfs_cid,
-            message="Certificate verified successfully" if is_valid else "Certificate has been revoked"
+            file_url=file_url,
+            message="Certificate verified successfully"
+            if is_valid else "Certificate has been revoked"
         )
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Verification failed: {str(e)}")
-
 @router.get("/key/{student_id}")
 async def get_certificate_key(student_id: str, db: Session = Depends(get_db)):
     """
