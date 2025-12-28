@@ -76,31 +76,90 @@
 
       <!-- Transactions Table -->
       <div class="bg-card border border-border rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
+        <!-- Loading State -->
+        <div v-if="isLoading" class="p-8 text-center">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+          <p class="mt-4 text-muted-foreground">Loading certificates from blockchain...</p>
+        </div>
+
+        <!-- Error State -->
+        <div v-else-if="error" class="p-8 text-center">
+          <p class="text-destructive mb-4">{{ error }}</p>
+          <button
+            @click="fetchCertificates"
+            class="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/80"
+          >
+            Retry
+          </button>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else-if="paginatedCertificates.length === 0" class="p-8 text-center">
+          <p class="text-muted-foreground">No certificates found</p>
+        </div>
+
+        <!-- Table -->
+        <div v-else class="overflow-x-auto">
           <table class="w-full">
             <thead>
               <tr class="border-b border-border bg-secondary/50">
-                <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-foreground uppercase">Type</th>
-                <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-foreground uppercase">ID</th>
-                <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-foreground uppercase hidden sm:table-cell">Block</th>
-                <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-foreground uppercase hidden md:table-cell">Issuer</th>
-                <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-foreground uppercase hidden lg:table-cell">Timestamp</th>
+                <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-foreground uppercase">Status</th>
+                <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-foreground uppercase">Student ID</th>
+                <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-foreground uppercase hidden md:table-cell">Certificate Hash</th>
+                <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-foreground uppercase hidden lg:table-cell">Issued</th>
+                <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-foreground uppercase hidden lg:table-cell">Last Updated</th>
+                <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-foreground uppercase hidden xl:table-cell">Revoke Reason</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-border">
-              <tr v-for="i in 5" :key="i" class="hover:bg-secondary/30 transition">
+              <tr v-for="cert in paginatedCertificates" :key="cert.studentId" class="hover:bg-secondary/30 transition">
                 <td class="px-4 sm:px-6 py-3">
-                  <span class="inline-block px-2 py-1 bg-accent/20 text-accent text-xs font-semibold rounded">
-                    {{ i % 2 === 0 ? 'ISSUE' : 'REVOKE' }}
+                  <span 
+                    :class="getStatusBadgeClass(cert.isValid)"
+                    class="inline-block px-2 py-1 text-xs font-semibold rounded"
+                  >
+                    {{ cert.isValid ? 'ACTIVE' : 'REVOKED' }}
                   </span>
                 </td>
-                <td class="px-4 sm:px-6 py-3 text-sm text-accent font-mono truncate">CERT_{{ String(1000000 + i).slice(-6) }}</td>
-                <td class="px-4 sm:px-6 py-3 text-sm text-foreground hidden sm:table-cell">#{{ 50000 + i }}</td>
-                <td class="px-4 sm:px-6 py-3 text-sm text-muted-foreground font-mono hidden md:table-cell truncate">0x1234...abcd</td>
-                <td class="px-4 sm:px-6 py-3 text-sm text-muted-foreground hidden lg:table-cell">2 days ago</td>
+                <td class="px-4 sm:px-6 py-3 text-sm text-accent font-mono">{{ cert.studentId }}</td>
+                <td class="px-4 sm:px-6 py-3 text-sm text-muted-foreground font-mono hidden md:table-cell truncate" :title="cert.certHash">
+                  {{ truncateHash(cert.certHash) }}
+                </td>
+                <td class="px-4 sm:px-6 py-3 text-sm text-muted-foreground hidden lg:table-cell" :title="formatTimestamp(cert.timestampIssued)">
+                  {{ getTimeAgo(cert.timestampIssued) }}
+                </td>
+                <td class="px-4 sm:px-6 py-3 text-sm text-muted-foreground hidden lg:table-cell" :title="formatTimestamp(cert.timestampLastUpdated)">
+                  {{ getTimeAgo(cert.timestampLastUpdated) }}
+                </td>
+                <td class="px-4 sm:px-6 py-3 text-sm text-muted-foreground hidden xl:table-cell truncate">
+                  {{ cert.revokeReason || '-' }}
+                </td>
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="!isLoading && !error && totalPages > 1" class="border-t border-border px-4 py-3 flex items-center justify-between">
+          <div class="text-sm text-muted-foreground">
+            Showing {{ startIndex + 1 }} to {{ Math.min(endIndex, filteredCertificates.length) }} of {{ filteredCertificates.length }} certificates
+          </div>
+          <div class="flex gap-2">
+            <button
+              @click="currentPage--"
+              :disabled="currentPage === 1"
+              class="px-3 py-1 border border-border rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              @click="currentPage++"
+              :disabled="currentPage === totalPages"
+              class="px-3 py-1 border border-border rounded hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -110,13 +169,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useCertificateStore } from '@/stores/certificateStore'
-import type { Transaction } from '@/types'
-import TransactionItem from '@/components/TransactionItem.vue'
+import { getAllCertificatesFromBlockchain, type BlockchainCertificate } from '@/services/api'
 
-const certificateStore = useCertificateStore()
 const isLoading = ref(false)
-const selectedTransaction = ref<Transaction | null>(null)
+const certificates = ref<BlockchainCertificate[]>([])
+const error = ref<string | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
@@ -126,22 +183,30 @@ const filters = ref({
   search: '',
 })
 
-const totalTransactions = computed(() => certificateStore.transactions.length)
-const issuedCount = computed(() =>
-  certificateStore.transactions.filter(t => t.type === 'issue').length
-)
+const totalTransactions = computed(() => certificates.value.length)
+const issuedCount = computed(() => certificates.value.length)
 const revokedCount = computed(() =>
-  certificateStore.transactions.filter(t => t.type === 'revoke').length
+  certificates.value.filter(cert => !cert.isValid).length
 )
-const activeDiplomasCount = computed(() => certificateStore.activeCertificates.length)
+const activeDiplomasCount = computed(() => 
+  certificates.value.filter(cert => cert.isValid).length
+)
 
-const filteredTransactions = computed(() => {
-  return certificateStore.transactions.filter(tx => {
-    if (filters.value.type && tx.type !== filters.value.type) return false
+const filteredCertificates = computed(() => {
+  return certificates.value.filter(cert => {
+    // Filter by type (issue/revoke)
+    if (filters.value.type === 'issue' && !cert.isValid) return false
+    if (filters.value.type === 'revoke' && cert.isValid) return false
+    
+    // Filter by status
+    if (filters.value.status === 'active' && !cert.isValid) return false
+    if (filters.value.status === 'revoked' && cert.isValid) return false
+    
+    // Filter by search
     if (filters.value.search) {
       const search = filters.value.search.toLowerCase()
-      if (!tx.certificateId.toLowerCase().includes(search) &&
-          !tx.hash.toLowerCase().includes(search)) {
+      if (!cert.studentId.toLowerCase().includes(search) &&
+          !cert.certHash.toLowerCase().includes(search)) {
         return false
       }
     }
@@ -149,41 +214,46 @@ const filteredTransactions = computed(() => {
   })
 })
 
-const totalPages = computed(() => Math.ceil(filteredTransactions.value.length / pageSize.value))
+const totalPages = computed(() => Math.ceil(filteredCertificates.value.length / pageSize.value))
 const startIndex = computed(() => (currentPage.value - 1) * pageSize.value)
 const endIndex = computed(() => startIndex.value + pageSize.value)
-const paginatedTransactions = computed(() =>
-  filteredTransactions.value.slice(startIndex.value, endIndex.value)
+const paginatedCertificates = computed(() =>
+  filteredCertificates.value.slice(startIndex.value, endIndex.value)
 )
 
-const truncateAddress = (address: string): string => {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`
+const truncateHash = (hash: string): string => {
+  if (hash.length <= 12) return hash
+  return `${hash.slice(0, 8)}...${hash.slice(-4)}`
 }
 
-const formatTime = (timestamp: string): string => {
-  return new Date(timestamp).toLocaleDateString('en-US', {
+const formatTimestamp = (timestamp: number): string => {
+  if (!timestamp || timestamp === 0) return 'N/A'
+  return new Date(timestamp * 1000).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
   })
 }
 
-const getTransactionTypeClass = (type: string) => {
-  switch (type) {
-    case 'issue':
-      return 'bg-green-100 text-green-800'
-    case 'revoke':
-      return 'bg-red-100 text-red-800'
-    case 'update':
-      return 'bg-blue-100 text-blue-800'
-    default:
-      return 'bg-gray-100 text-gray-800'
-  }
+const getTimeAgo = (timestamp: number): string => {
+  if (!timestamp || timestamp === 0) return 'N/A'
+  const now = Math.floor(Date.now() / 1000)
+  const diff = now - timestamp
+  
+  if (diff < 60) return 'just now'
+  if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`
+  if (diff < 2592000) return `${Math.floor(diff / 86400)} days ago`
+  if (diff < 31536000) return `${Math.floor(diff / 2592000)} months ago`
+  return `${Math.floor(diff / 31536000)} years ago`
 }
 
-const viewTransactionDetails = (transaction: Transaction) => {
-  selectedTransaction.value = transaction
+const getStatusBadgeClass = (isValid: boolean) => {
+  return isValid 
+    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+    : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
 }
 
 const resetFilters = () => {
@@ -191,7 +261,22 @@ const resetFilters = () => {
   currentPage.value = 1
 }
 
+const fetchCertificates = async () => {
+  isLoading.value = true
+  error.value = null
+  
+  try {
+    const response = await getAllCertificatesFromBlockchain()
+    certificates.value = response.certificates
+  } catch (err: any) {
+    error.value = err.message || 'Failed to fetch certificates from blockchain'
+    console.error('Error fetching certificates:', err)
+  } finally {
+    isLoading.value = false
+  }
+}
+
 onMounted(() => {
-  certificateStore.fetchTransactions()
+  fetchCertificates()
 })
 </script>

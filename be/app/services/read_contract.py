@@ -8,8 +8,14 @@ load_dotenv()
 class ContractService:
     def __init__(self):
         # Get configuration from environment
-        rpc_url = os.getenv('SEPOLIA_URL', 'https://sepolia.infura.io/v3/your_infura_project_id')
-        self.contract_address = os.getenv('CONTRACT_ADDRESS', '0xC541727abA1192AB5BC91D3489ED9683707724f4')
+        rpc_url = os.getenv('SEPOLIA_URL')
+        self.contract_address = os.getenv('CONTRACT_ADDRESS')
+        
+        if not rpc_url:
+            raise ValueError("SEPOLIA_URL environment variable is not set")
+        if not self.contract_address:
+            raise ValueError("CONTRACT_ADDRESS environment variable is not set")
+        
         print(f"Loaded SEPOLIA_URL: {rpc_url}")
         print(f"Loaded CONTRACT_ADDRESS: {self.contract_address}")
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
@@ -93,6 +99,21 @@ class ContractService:
                 "inputs": [{"name": "studentId", "type": "string"}],
                 "name": "isCertificateValid",
                 "outputs": [{"name": "", "type": "bool"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getAllCertificates",
+                "outputs": [
+                    {"name": "studentIds", "type": "string[]"},
+                    {"name": "certHashes", "type": "bytes32[]"},
+                    {"name": "ipfsCIDs", "type": "string[]"},
+                    {"name": "isValids", "type": "bool[]"},
+                    {"name": "timestampsIssued", "type": "uint256[]"},
+                    {"name": "timestampsLastUpdated", "type": "uint256[]"},
+                    {"name": "revokeReasons", "type": "string[]"}
+                ],
                 "stateMutability": "view",
                 "type": "function"
             }
@@ -255,3 +276,28 @@ class ContractService:
         except Exception as e:
             print(f"Error getting all signatures: {str(e)}")
             return {"issueSignatures": [], "revokeSignatures": []}
+    
+    def get_all_certificates(self) -> List[Dict]:
+        """
+        Get all certificates from the smart contract
+        Returns: List of certificate dictionaries
+        """
+        try:
+            result = self.contract.functions.getAllCertificates().call()
+            
+            certificates = []
+            for i in range(len(result[0])):
+                certificates.append({
+                    "studentId": result[0][i],
+                    "certHash": result[1][i].hex(),
+                    "ipfsCID": result[2][i],
+                    "isValid": result[3][i],
+                    "timestampIssued": result[4][i],
+                    "timestampLastUpdated": result[5][i],
+                    "revokeReason": result[6][i]
+                })
+            
+            return certificates
+        except Exception as e:
+            print(f"Error getting all certificates: {str(e)}")
+            return []

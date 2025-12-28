@@ -4,8 +4,10 @@ from app.database.connection import get_db
 from app.schemas.certificate import CertificateCreate, CertificateResponse, CertificateUpdate
 from app.services.certificate import CertificateService
 from app.services.student import StudentService
+from app.services.read_contract import ContractService
 
 router = APIRouter()
+contract_service = ContractService()
 
 # ==================== CERTIFICATE ENDPOINTS ====================
 
@@ -88,3 +90,19 @@ async def delete_certificate(
             detail="Certificate not found"
         )
     return None
+
+@router.get("/certificates/blockchain/all")
+async def get_all_certificates_from_blockchain():
+    """Get all certificates from blockchain smart contract"""
+    try:
+        certificates = contract_service.get_all_certificates()
+        return {
+            "success": True,
+            "certificates": certificates,
+            "count": len(certificates)
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch certificates from blockchain: {str(e)}"
+        )
