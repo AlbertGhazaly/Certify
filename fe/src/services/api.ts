@@ -7,6 +7,7 @@ import type {
   IssuerRegistrationListParams,
 } from '@/types';
 
+
 const apiClient = axios.create({
   baseURL: 'http://localhost:8000/api',
   headers: {
@@ -175,6 +176,15 @@ export const verifyCertificateByNIM = async (studentId: string) => {
   const res = await apiClient.post('/certificate/verify', {
     student_id: studentId,
   })
+  return res.data
+}
+
+export const verifyPublic = async (payload: {
+  ipfs_cid: string
+  aes_key: string
+  cert_hash: string
+}) => {
+  const res = await apiClient.post('/certificate/verify-public', payload)
   return res.data
 }
 

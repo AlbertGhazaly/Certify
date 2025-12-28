@@ -30,6 +30,18 @@ class VerifyCertificateResponse(BaseModel):
     ipfs_cid: Optional[str] = None
     file_url: Optional[str] = None
 
+class PublicVerifyRequest(BaseModel):
+    ipfs_cid: str
+    aes_key: str
+    cert_hash: str
+
+class PublicVerifyResponse(BaseModel):
+    success: bool
+    valid: bool
+    message: str
+    certificate_text: Optional[str] = None
+    file_url: Optional[str] = None
+
 class SignCertificateRequest(BaseModel):
     student_id: str
 

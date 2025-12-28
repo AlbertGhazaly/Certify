@@ -2,7 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.schemas.certificate import (
     IssueCertificateRequest, 
-    IssueCertificateResponse, 
+    IssueCertificateResponse,
+    PublicVerifyRequest,
+    PublicVerifyResponse, 
     VerifyCertificateRequest, 
     VerifyCertificateResponse,
     SignCertificateRequest,
@@ -16,6 +18,7 @@ from app.services.certificate import CertificateService
 from app.models.certificate_key import CertificateKey
 import hashlib
 from datetime import datetime
+from urllib.parse import quote
 
 router = APIRouter(tags=["certificate"])
 
@@ -173,19 +176,104 @@ async def verify_certificate(
                 ipfs_cid=ipfs_cid,
                 file_url=file_url
             )
+        
+        verify_url = (
+            "http://localhost:3000/verify"
+            f"?cid={quote(ipfs_cid)}"
+            f"&key={quote(aes_key)}"
+            f"&hash={quote(blockchain_hash)}"
+        )
+
+        certificate_text_with_url = (
+            certificate_text
+            + "\n\nVerifikasi Keaslian Ijazah:\n"
+            + verify_url
+        )
+
 
         return VerifyCertificateResponse(
             success=True,
             valid=is_valid,
-            certificate_text=certificate_text,
+            certificate_text=certificate_text_with_url,
             ipfs_cid=ipfs_cid,
-            file_url=file_url,
+            file_url=verify_url,
             message="Certificate verified successfully"
             if is_valid else "Certificate has been revoked"
         )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Verification failed: {str(e)}")
+
+@router.post("/verify-public", response_model=PublicVerifyResponse)
+async def verify_certificate_public(request: PublicVerifyRequest):
+    try:
+        file_url = ipfs_service.get_gateway_url(request.ipfs_cid)
+
+        # 1. Download encrypted data
+        encrypted_data = ipfs_service.get_file(request.ipfs_cid)
+        if not encrypted_data:
+            return PublicVerifyResponse(
+                success=False,
+                valid=False,
+                message="Failed to retrieve certificate from IPFS",
+                file_url=file_url
+            )
+
+        # 2. Decrypt
+        try:
+            decrypted_data = encryption_service.decrypt(
+                encrypted_data,
+                request.aes_key
+            )
+            certificate_text = decrypted_data.decode("utf-8")
+        except Exception:
+            return PublicVerifyResponse(
+                success=False,
+                valid=False,
+                message="Invalid AES key",
+                file_url=file_url
+            )
+
+        # 3. Verify hash
+        calculated_hash = hashlib.sha256(decrypted_data).hexdigest()
+        if calculated_hash != request.cert_hash:
+            return PublicVerifyResponse(
+                success=False,
+                valid=False,
+                message="Certificate hash mismatch",
+                file_url=file_url
+            )
+
+        # # 4. Verify on blockchain
+        # if not contract_service.is_hash_issued(request.cert_hash):
+        #     return PublicVerifyResponse(
+        #         success=False,
+        #         valid=False,
+        #         message="Certificate not registered on blockchain",
+        #         file_url=file_url
+        #     )
+        verify_url = (
+            "http://localhost:3000/verify"
+            f"?cid={quote(request.ipfs_cid)}"
+            f"&key={quote(request.aes_key)}"
+            f"&hash={quote(request.cert_hash)}"
+        )
+        certificate_text_with_url = (
+            certificate_text
+            + "\n\nVerifikasi Keaslian Ijazah:\n"
+            + verify_url
+        )
+        return PublicVerifyResponse(
+            success=True,
+            valid=True,
+            message="Certificate verified successfully",
+            certificate_text=certificate_text_with_url,
+            file_url=verify_url
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/key/{student_id}")
 async def get_certificate_key(student_id: str, db: Session = Depends(get_db)):
     """
