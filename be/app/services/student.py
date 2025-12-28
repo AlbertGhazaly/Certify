@@ -32,13 +32,10 @@ class StudentService:
         """
         Create a new student record with generated hash
         """
-        # Generate unique nonce
         unique_nonce = StudentService.generate_unique_nonce()
         
-        # Generate hash_val
         hash_val = StudentService.generate_hash_val(nim, nama, unique_nonce)
         
-        # Create student record
         student = Student(
             id=wallet_address,
             hash_val=hash_val,

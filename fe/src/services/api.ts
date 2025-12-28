@@ -8,13 +8,12 @@ import type {
 } from '@/types';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8000/api', // Adjust the base URL as needed
+  baseURL: 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Example function to get users
 export const getUsers = async () => {
   try {
     const response = await apiClient.get('/users');
@@ -25,7 +24,6 @@ export const getUsers = async () => {
   }
 };
 
-// Example function to create a user
 export const createUser = async (userData) => {
   try {
     const response = await apiClient.post('/users', userData);
@@ -36,7 +34,6 @@ export const createUser = async (userData) => {
   }
 };
 
-// Student API functions
 export const getStudents = async (): Promise<Student[]> => {
   try {
     const response = await apiClient.get('/students');
@@ -66,11 +63,7 @@ export const deleteStudent = async (walletAddress: string): Promise<void> => {
   }
 };
 
-/* =========================
-   ISSUER REGISTRATION API
-   ========================= */
 
-// Create registration
 export const createIssuerRegistration = async (
   data: IssuerRegistrationCreate
 ): Promise<IssuerRegistration> => {
@@ -83,7 +76,6 @@ export const createIssuerRegistration = async (
   }
 };
 
-// Get single registration by ID
 export const getIssuerRegistration = async (
   id: string
 ): Promise<IssuerRegistration> => {
@@ -96,7 +88,6 @@ export const getIssuerRegistration = async (
   }
 };
 
-// Get all registrations (with filters, pagination, sorting)
 export const getIssuerRegistrations = async (
   params: IssuerRegistrationListParams = {}
 ): Promise<IssuerRegistrationListResponse> => {
@@ -111,7 +102,6 @@ export const getIssuerRegistrations = async (
   }
 };
 
-// Accept registration
 export const acceptIssuerRegistration = async (
   id: string
 ): Promise<IssuerRegistration> => {
@@ -126,7 +116,6 @@ export const acceptIssuerRegistration = async (
   }
 };
 
-// Reject registration
 export const rejectIssuerRegistration = async (
   id: string
 ): Promise<IssuerRegistration> => {
@@ -141,7 +130,6 @@ export const rejectIssuerRegistration = async (
   }
 };
 
-// Delete registration
 export const deleteIssuerRegistration = async (
   id: string
 ): Promise<void> => {
@@ -173,7 +161,6 @@ export interface AllCertificatesResponse {
   count: number;
 }
 
-// Get all certificates from blockchain
 export const getAllCertificatesFromBlockchain = async (): Promise<AllCertificatesResponse> => {
   try {
     const response = await apiClient.get('/certificate/blockchain/all');

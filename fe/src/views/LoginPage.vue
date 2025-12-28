@@ -144,20 +144,16 @@ const handleSignAndLogin = async () => {
   errorMessage.value = ''
 
   try {
-    // Sign the challenge with MetaMask
     const signature = await signMessage(authChallenge.value)
 
-    // Verify signature and validate issuer status on backend
     const success = await authStore.verifySignature(connectedAddress.value, signature)
 
     if (success) {
-      // Redirect to admin page (user is now authenticated as issuer)
       router.push('/admin')
     } else {
       throw new Error('Authentication failed. Please try again.')
     }
   } catch (e: any) {
-    // Handle specific error messages
     if (e.message.includes('Only issuers') || e.message.includes('Access denied')) {
       errorMessage.value = 'Access Denied: Your wallet is not registered as an issuer on the Sepolia blockchain.'
     } else if (e.message.includes('signature')) {
@@ -183,5 +179,4 @@ const resetFlow = () => {
 </script>
 
 <style scoped>
-/* Add any additional custom styles if needed */
 </style>

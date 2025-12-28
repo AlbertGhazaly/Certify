@@ -46,18 +46,15 @@ class SessionService:
         jwt_token: str
     ) -> Session:
         """Create session for authenticated issuer"""
-        # Check if session exists
         db_session = db.query(Session).filter(Session.wallet_address == wallet_address).first()
         
         if db_session:
-            # Update existing session
             db_session.public_key_x = public_key_x
             db_session.public_key_y = public_key_y
             db_session.role = role
             db_session.jwt_token = jwt_token
             db_session.created_at = int(time.time())
         else:
-            # Create new session
             db_session = Session(
                 wallet_address=wallet_address,
                 public_key_x=public_key_x,

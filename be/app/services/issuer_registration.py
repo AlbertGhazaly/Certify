@@ -16,8 +16,6 @@ class IssuerRegistrationService:
         db: Session,
         name: str,
         wallet_address: str,
-        # public_key_x: str,
-        # public_key_y: str,
         created_at: Optional[int] = None,
     ) -> Issuer_registration:
         """Create new issuer registration (default status: pending)"""
@@ -42,9 +40,6 @@ class IssuerRegistrationService:
 
         return registration
 
-    # =========================
-    # GET SINGLE
-    # =========================
     @staticmethod
     def get_by_id(
         db: Session, id_registration: str
@@ -65,9 +60,6 @@ class IssuerRegistrationService:
             .first()
         )
 
-    # =========================
-    # GET ALL (FILTER + PAGINATION)
-    # =========================
     @staticmethod
     def get_all(
         db: Session,
@@ -122,9 +114,6 @@ class IssuerRegistrationService:
             "items": items,
         }
 
-    # =========================
-    # ACCEPT / REJECT
-    # =========================
     @staticmethod
     def update_status(
         db: Session,
@@ -148,7 +137,6 @@ class IssuerRegistrationService:
 
         return registration
 
-    # Convenience wrappers
     @staticmethod
     def accept_registration(db: Session, id_registration: str):
         return IssuerRegistrationService.update_status(
@@ -161,9 +149,6 @@ class IssuerRegistrationService:
             db, id_registration, IssuerStatus.reject
         )
 
-    # =========================
-    # DELETE
-    # =========================
     @staticmethod
     def delete_registration(
         db: Session, id_registration: str

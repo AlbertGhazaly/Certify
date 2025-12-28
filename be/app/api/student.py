@@ -6,7 +6,6 @@ from app.services.student import StudentService
 
 router = APIRouter()
 
-# ==================== STUDENT ENDPOINTS ====================
 
 @router.post("/students", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
 async def create_student(
@@ -18,7 +17,6 @@ async def create_student(
     - Generates unique_nonce automatically
     - Calculates hash_val = SHA256(NIM + Nama + unique_nonce)
     """
-    # Check if student with this wallet address already exists
     existing_student = StudentService.get_student_by_wallet(db, student_data.wallet_address)
     if existing_student:
         raise HTTPException(
@@ -26,7 +24,6 @@ async def create_student(
             detail="Student with this wallet address already exists"
         )
     
-    # Check if student with this NIM already exists
     existing_nim = StudentService.get_student_by_nim(db, student_data.nim)
     if existing_nim:
         raise HTTPException(
@@ -100,14 +97,12 @@ async def verify_student_hash(
             detail="Student not found"
         )
     
-    # Verify NIM and Nama match
     if student.nim != verify_data.nim or student.nama != verify_data.nama:
         return {
             "valid": False,
             "message": "Student data mismatch"
         }
     
-    # Verify hash
     is_valid = StudentService.verify_student_hash(student)
     
     return {

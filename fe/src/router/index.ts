@@ -73,22 +73,17 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   
-  // Wait for store to be ready
   if (!authStore.isReady) {
     await authStore.init()
   }
 
-  // Check if route requires authentication
   if (to.meta.requiresAuth) {
     if (!authStore.isAuthenticated) {
-      // Not authenticated, redirect to login
       next("/login")
     } else {
-      // Authenticated (already validated as issuer in backend)
       next()
     }
   } else {
-    // Public route
     next()
   }
 })

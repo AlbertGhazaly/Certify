@@ -30,7 +30,6 @@ export function useBlockchain() {
         createdAt: new Date().toISOString(),
       }
 
-      // Simulated blockchain transaction
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
       return certificate
@@ -82,7 +81,6 @@ export function useBlockchain() {
     error.value = null
 
     try {
-      // Simulated verification logic
       await new Promise((resolve) => setTimeout(resolve, 500))
       return true
     } catch (e) {

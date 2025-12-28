@@ -7,7 +7,6 @@ load_dotenv()
 
 class ContractService:
     def __init__(self):
-        # Get configuration from environment
         rpc_url = os.getenv('SEPOLIA_URL')
         self.contract_address = os.getenv('CONTRACT_ADDRESS')
         
@@ -20,7 +19,6 @@ class ContractService:
         print(f"Loaded CONTRACT_ADDRESS: {self.contract_address}")
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         
-        # Full ABI for all read functions
         self.contract_abi = [
             # Issuer Management - Read Functions
             {

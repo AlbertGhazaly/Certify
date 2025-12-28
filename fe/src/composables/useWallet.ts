@@ -20,14 +20,12 @@ export function useWallet() {
     }
 
     try {
-      // Request account access
       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" })
 
       if (!accounts || accounts.length === 0) {
         throw new Error("No accounts found")
       }
 
-      // Setup provider and signer
       provider.value = new ethers.providers.Web3Provider(window.ethereum)
       signer.value = provider.value.getSigner()
       walletAddress.value = accounts[0]

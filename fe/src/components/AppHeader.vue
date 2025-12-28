@@ -57,8 +57,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'vue-router';
-// import ThemeToggle from "@/components/ThemeToggle.vue";
-// import { ToggleTheme } from './ToggleTheme.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();

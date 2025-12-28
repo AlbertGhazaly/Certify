@@ -35,7 +35,6 @@ export const useCertificateStore = defineStore("certificate", () => {
     loading.value = true
     error.value = null
     try {
-      // Simulated API call
       await new Promise((resolve) => setTimeout(resolve, 500))
     } catch (e) {
       error.value = e instanceof Error ? e.message : "Failed to fetch certificates"
@@ -48,7 +47,6 @@ export const useCertificateStore = defineStore("certificate", () => {
     loading.value = true
     error.value = null
     try {
-      // Simulated API call
       await new Promise((resolve) => setTimeout(resolve, 500))
     } catch (e) {
       error.value = e instanceof Error ? e.message : "Failed to fetch transactions"

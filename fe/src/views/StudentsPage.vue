@@ -193,7 +193,6 @@ const showDeleteModal = ref(false);
 const studentToDelete = ref<Student | null>(null);
 const isDeleting = ref(false);
 
-// Fetch students on component mount
 onMounted(() => {
   fetchStudents();
 });
@@ -232,7 +231,7 @@ const handleAddStudent = async () => {
   try {
     await createStudent(newStudent.value);
     closeAddModal();
-    await fetchStudents(); // Refresh the table
+    await fetchStudents();
   } catch (error) {
     modalError.value = error instanceof Error ? error.message : 'Failed to add student';
   } finally {
@@ -257,7 +256,7 @@ const handleDeleteStudent = async () => {
   try {
     await deleteStudent(studentToDelete.value.wallet_address);
     closeDeleteModal();
-    await fetchStudents(); // Refresh the table
+    await fetchStudents();
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'Failed to delete student';
     closeDeleteModal();

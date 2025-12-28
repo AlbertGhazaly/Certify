@@ -668,23 +668,19 @@ const handleRevoke = async () => {
     
     const contract = new web3.eth.Contract(CONTRACT_ABI_READ, CONTRACT_ADDRESS)
     
-    // Check if certificate exists
     const exists = await contract.methods.certificateExistsFor(revokeForm.value.studentId).call()
     if (!exists) {
       throw new Error('Sertifikat tidak ditemukan untuk NIM tersebut')
     }
     
-    // Check if certificate is valid
     const isValid = await contract.methods.isCertificateValid(revokeForm.value.studentId).call()
     if (!isValid) {
       throw new Error('Sertifikat sudah dicabut atau tidak valid')
     }
     
-    // Get certificate details
     const cert = await contract.methods.getCertificate(revokeForm.value.studentId).call()
     const issuerWallets = cert.issuerWallets as string[]
     
-    // Check if current user is an authorized issuer
     const isAuthorizedIssuer = issuerWallets.some(
       (wallet: string) => wallet.toLowerCase() === authStore.userAddress?.toLowerCase()
     )
@@ -693,7 +689,6 @@ const handleRevoke = async () => {
       throw new Error('Anda tidak memiliki otorisasi untuk mencabut sertifikat ini')
     }
     
-    // Check if already signed revocation
     const existingSignature = await contract.methods.getRevokeSignature(
       revokeForm.value.studentId,
       authStore.userAddress
@@ -705,16 +700,13 @@ const handleRevoke = async () => {
     
     console.log('✓ Certificate validation passed')
     
-    // Step 2: Create message to sign for revocation
     console.log('Step 2: Creating revocation signature message...')
     const message = `Revoke certificate for student ${revokeForm.value.studentId}: ${revokeForm.value.reason}`
     
-    // Step 3: Sign the revocation with MetaMask
     console.log('Step 3: Requesting revocation signature from MetaMask...')
     const signature = await CryptoUtils.signWithMetaMask(message, authStore.userAddress)
     console.log('✓ Revocation signature obtained:', signature.substring(0, 20) + '...')
 
-    // Step 4: Submit revocation to blockchain
     console.log('Step 4: Submitting revocation to blockchain...')
     
     const REVOKE_ABI = [
@@ -731,7 +723,6 @@ const handleRevoke = async () => {
       }
     ]
 
-    // Send revocation transaction
     const tx = await CryptoUtils.sendContractTransaction(
       CONTRACT_ADDRESS,
       REVOKE_ABI,
@@ -748,7 +739,6 @@ const handleRevoke = async () => {
 
     revokeSuccessMessage.value = `Ijazah untuk NIM ${revokeForm.value.studentId} berhasil dicabut!\n\nAlasan: ${revokeForm.value.reason}\n\nTransaction Hash: ${tx.transactionHash}\n\nSertifikat langsung dicabut karena setidaknya satu penerbit telah menandatangani pencabutan.`
     
-    // Reset form after 10 seconds
     setTimeout(() => {
       resetRevokeForm()
     }, 10000)

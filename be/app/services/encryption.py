@@ -18,11 +18,10 @@ class AESEncryptionService:
         """
         try:
             key = base64.b64decode(key_b64)
-            iv = get_random_bytes(16)  # AES block size
+            iv = get_random_bytes(16)
             cipher = AES.new(key, AES.MODE_CBC, iv)
             padded_data = pad(data, AES.block_size)
             encrypted = cipher.encrypt(padded_data)
-            # Prepend IV to encrypted data
             return iv + encrypted
         except Exception as e:
             raise ValueError(f"Encryption failed: {str(e)}")
@@ -35,8 +34,8 @@ class AESEncryptionService:
         """
         try:
             key = base64.b64decode(key_b64)
-            iv = encrypted_data[:16]  # Extract IV
-            encrypted = encrypted_data[16:]  # Rest is encrypted data
+            iv = encrypted_data[:16]
+            encrypted = encrypted_data[16:]
             cipher = AES.new(key, AES.MODE_CBC, iv)
             decrypted = cipher.decrypt(encrypted)
             return unpad(decrypted, AES.block_size)

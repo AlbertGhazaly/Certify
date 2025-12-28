@@ -32,12 +32,12 @@
           </router-link>
         </div>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button
+          <!-- <button
             @click="openModal"
             class="w-full sm:w-auto px-8 py-3 bg-accent text-accent-foreground rounded-lg font-semibold hover:bg-accent/90 transition"
           >
             Register as Issuer
-          </button>
+          </button> -->
         </div>
         <IssuerRegistrationModal
           v-if="showModal"

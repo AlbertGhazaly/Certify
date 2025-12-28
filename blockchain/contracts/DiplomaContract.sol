@@ -120,7 +120,6 @@ contract DiplomaContract {
     function removeIssuer(address walletId) external onlyIssuer {
         require(issuers[walletId].isActive, "Issuer does not exist");
         
-        // Count active issuers
         uint256 activeCount = 0;
         for (uint i = 0; i < issuerList.length; i++) {
             if (issuers[issuerList[i]].isActive) {
@@ -188,7 +187,6 @@ contract DiplomaContract {
         require(issuerWallets.length > 0, "At least one issuer required");
         require(bytes(ipfsCID).length > 0, "IPFS CID cannot be empty");
         
-        // If certificate exists and is revoked, delete it first
         if (certificateExists[studentId] && !certificates[studentId].isValid) {
             delete certificates[studentId];
         }
@@ -212,7 +210,7 @@ contract DiplomaContract {
         cert.issuerWallets = issuerWallets;
         cert.issueSignatureCount = 1;
         cert.revokeSignatureCount = 0;
-        cert.isValid = false; // Not valid until all required signatures are collected
+        cert.isValid = false;
         cert.timestampIssued = block.timestamp;
         cert.timestampLastUpdated = block.timestamp;
         cert.revokeReason = "";
@@ -220,12 +218,11 @@ contract DiplomaContract {
         cert.issueSignatures[msg.sender] = signature;
         
         certificateExists[studentId] = true;
-        certificateIds.push(studentId); // Add to certificate IDs list
+        certificateIds.push(studentId);
         
         emit CertificateProposed(studentId, certHash, ipfsCID, msg.sender);
         emit CertificateIssueSigned(studentId, msg.sender);
         
-        // Check if certificate should be automatically issued
         _checkAndIssueCertificate(studentId);
     }
 
@@ -248,7 +245,6 @@ contract DiplomaContract {
         
         emit CertificateIssueSigned(studentId, msg.sender);
         
-        // Check if certificate should be issued
         _checkAndIssueCertificate(studentId);
     }
 
@@ -261,10 +257,8 @@ contract DiplomaContract {
         
         bool shouldIssue = false;
         if (cert.requiresAllSignatures) {
-            // Requires all issuers to sign
             shouldIssue = cert.issueSignatureCount == cert.issuerWallets.length;
         } else {
-            // Requires majority (more than half)
             shouldIssue = cert.issueSignatureCount > cert.issuerWallets.length / 2;
         }
         
@@ -294,14 +288,12 @@ contract DiplomaContract {
         cert.revokeSignatureCount++;
         cert.timestampLastUpdated = block.timestamp;
         
-        // Store reason (last one provided)
         if (bytes(reason).length > 0) {
             cert.revokeReason = reason;
         }
         
         emit CertificateRevokeSigned(studentId, msg.sender, reason);
         
-        // Check if certificate should be revoked
         _checkAndRevokeCertificate(studentId);
     }
 
@@ -314,10 +306,8 @@ contract DiplomaContract {
         
         bool shouldRevoke = false;
         if (cert.requiresAllSignatures) {
-            // Requires all issuers to sign
             shouldRevoke = cert.revokeSignatureCount == cert.issuerWallets.length;
         } else {
-            // Requires majority (more than half)
             shouldRevoke = cert.revokeSignatureCount > cert.issuerWallets.length / 2;
         }
         

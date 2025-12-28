@@ -35,8 +35,6 @@ def create_registration(
             db=db,
             name=data.name,
             wallet_address=data.wallet_address,
-            # public_key_x=data.public_key_x,
-            # public_key_y=data.public_key_y,
         )
     except Exception as e:
         raise HTTPException(

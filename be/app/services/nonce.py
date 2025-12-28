@@ -11,7 +11,6 @@ class NonceService:
         """Create or update nonce for wallet address"""
         expires_at = int(time.time()) + NonceService.NONCE_EXPIRY_SECONDS
         
-        # Check if nonce exists
         db_nonce = db.query(Nonce).filter(Nonce.wallet_address == wallet_address).first()
         
         if db_nonce:
@@ -37,7 +36,6 @@ class NonceService:
         if db_nonce and db_nonce.expires_at > int(time.time()):
             return db_nonce
         
-        # Clean up expired nonce
         if db_nonce:
             db.delete(db_nonce)
             db.commit()

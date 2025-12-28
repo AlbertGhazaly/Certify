@@ -8,8 +8,5 @@ class Certificate(Base):
     """
     __tablename__ = "certificates"
     
-    # Id: NIM (primary key)
     id = Column(String, primary_key=True, index=True, name="id")
-    
-    # AES_Key for certificate encryption
     aes_key = Column(String, nullable=False)

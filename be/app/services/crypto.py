@@ -21,21 +21,16 @@ class AuthCryptoService:
         Returns: (is_valid, public_key_x, public_key_y)
         """
         try:
-            # Encode message for Ethereum signed message
             message_hash = encode_defunct(text=message)
             
-            # Recover the address from the signature using eth_account
             recovered_address = Account.recover_message(message_hash, signature=signature)
             
             print(f"Recovered address: {recovered_address}")
             print(f"Expected address: {wallet_address}")
             
-            # Compare addresses (case-insensitive)
             is_valid = recovered_address.lower() == wallet_address.lower()
             print(is_valid)
             if is_valid:
-                # If valid, extract public key from signature
-                # Parse signature to get v, r, s
                 if signature.startswith('0x'):
                     signature = signature[2:]
                 
@@ -44,18 +39,15 @@ class AuthCryptoService:
                 s = int.from_bytes(signature_bytes[32:64], 'big')
                 v = signature_bytes[64]
                 
-                # Recover public key using eth_keys
                 from eth_keys import keys
                 from eth_keys.backends import NativeECCBackend
                 
-                # Adjust v for Ethereum's encoding
                 if v >= 27:
                     v -= 27
                 
                 backend = NativeECCBackend()
                 public_key = backend.ecdsa_recover(message_hash.body, keys.Signature(vrs=(v, r, s)))
                 
-                # Extract x and y coordinates
                 public_key_bytes = public_key.to_bytes()
                 public_key_x = public_key_bytes[1:33].hex()
                 public_key_y = public_key_bytes[33:65].hex()

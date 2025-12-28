@@ -7,7 +7,7 @@ class UserBase(BaseModel):
     publicKeyY: str
 
     class Config:
-        from_attributes = True  # Use this for Pydantic v2 compatibility
+        from_attributes = True
 
 class UserCreate(UserBase):
     pass

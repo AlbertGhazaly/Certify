@@ -19,13 +19,10 @@ def request_challenge(request: ChallengeRequest, db: Session = Depends(get_db)):
     Client provides wallet address, server generates nonce
     """
     try:
-        # Generate nonce
         nonce = crypto_service.generate_nonce()
         
-        # Store nonce in database (expires in 5 minutes)
         NonceService.create_nonce(db, request.wallet_address, nonce)
         
-        # Create challenge message
         challenge = crypto_service.create_challenge_message(nonce, request.wallet_address)
         
         return ChallengeResponse(challenge=challenge, nonce=nonce)
@@ -41,15 +38,12 @@ def verify_signature(request: VerifyRequest, db: Session = Depends(get_db)):
     """
     try:
         
-        # Get stored nonce
         nonce_record = NonceService.get_nonce(db, request.wallet_address)
         if not nonce_record:
             raise HTTPException(status_code=400, detail="Challenge expired or not found")
         
-        # Recreate challenge message
         challenge = crypto_service.create_challenge_message(nonce_record.nonce, request.wallet_address)
 
-        # Verify signature and recover public key
         is_valid, public_key_x, public_key_y = crypto_service.verify_wallet_ownership(
             challenge, 
             request.signature, 
@@ -58,24 +52,19 @@ def verify_signature(request: VerifyRequest, db: Session = Depends(get_db)):
     
         if not is_valid:
             raise HTTPException(status_code=401, detail="Invalid signature or wallet address mismatch")
-        # Validate issuer status from Sepolia contract
         is_issuer = contract_service.is_issuer(request.wallet_address)
         if not is_issuer:
-            # Delete used nonce
             NonceService.delete_nonce(db, request.wallet_address)
             raise HTTPException(
                 status_code=403, 
                 detail="Access denied. Only issuers can authenticate."
             )
         
-        # Delete used nonce
         NonceService.delete_nonce(db, request.wallet_address)
         
-        # Create JWT token for issuer
         role = "issuer"
         jwt_token = SessionService.create_jwt_token(request.wallet_address, role)
         
-        # Create session with JWT token
         session = SessionService.create_session(
             db, 
             request.wallet_address, 
@@ -121,10 +110,8 @@ def get_session(wallet_address: str, db: Session = Depends(get_db)):
     """
     session = SessionService.get_session(db, wallet_address)
     if session:
-        # Validate token
         payload = SessionService.verify_jwt_token(session.jwt_token)
         if payload:
-            # Double-check issuer status from contract
             is_issuer = contract_service.is_issuer(wallet_address)
             if is_issuer:
                 return {
@@ -143,7 +130,6 @@ def validate_token(token: str, db: Session = Depends(get_db)):
     """
     session = SessionService.validate_session_token(db, token)
     if session:
-        # Validate issuer status from contract
         is_issuer = contract_service.is_issuer(session.wallet_address)
         if is_issuer:
             return {

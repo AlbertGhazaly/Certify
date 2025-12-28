@@ -59,11 +59,9 @@ async def issue_certificate(
     Flow: Generate txt -> Encrypt -> Upload to IPFS -> Store key -> Return for signing
     """
     try:
-        # 1. Check if certificate already exists
         if contract_service.certificate_exists(request.student_id):
             raise HTTPException(status_code=400, detail="Certificate already exists for this student ID")
         
-        # 2. Generate certificate text
         certificate_text = IJAZAH_TEMPLATE.format(
             student_name=request.student_name,
             student_id=request.student_id,
@@ -73,14 +71,11 @@ async def issue_certificate(
             issue_date=request.issue_date
         )
         
-        # 3. Generate AES key
         aes_key = encryption_service.generate_key()
         
-        # 4. Encrypt certificate
         certificate_bytes = certificate_text.encode('utf-8')
         encrypted_data = encryption_service.encrypt(certificate_bytes, aes_key)
         
-        # 5. Upload encrypted data to IPFS
         ipfs_cid = ipfs_service.upload_file(
             encrypted_data,
             f"certificate_{request.student_id}.enc"
@@ -89,10 +84,8 @@ async def issue_certificate(
         if not ipfs_cid:
             raise HTTPException(status_code=500, detail="Failed to upload to IPFS")
         
-        # 6. Calculate certificate hash (hash of original text)
         cert_hash = hashlib.sha256(certificate_bytes).hexdigest()
         
-        # 7. Store AES key in database
         cert_key = CertificateKey(
             student_id=request.student_id,
             aes_key=aes_key
@@ -106,7 +99,7 @@ async def issue_certificate(
             student_id=request.student_id,
             ipfs_cid=ipfs_cid,
             cert_hash=cert_hash,
-            aes_key=aes_key  # Return key once for user to store
+            aes_key=aes_key
         )
         
     except HTTPException:
@@ -230,16 +223,13 @@ async def prepare_certificate_signing(
     Returns certificate hash and blockchain data for frontend to sign
     """
     try:
-        # 1. Check if certificate exists on blockchain
         if not contract_service.certificate_exists(request.student_id):
             raise HTTPException(status_code=404, detail="Certificate not found on blockchain")
         
-        # 2. Get certificate data from blockchain
         cert_data = contract_service.get_certificate(request.student_id)
         if not cert_data:
             raise HTTPException(status_code=404, detail="Failed to retrieve certificate data")
         
-        # 3. Return data needed for signing
         return SignCertificateResponse(
             success=True,
             message="Certificate data retrieved. Ready for signing.",

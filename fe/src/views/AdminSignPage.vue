@@ -195,7 +195,6 @@ const searchCertificate = async () => {
   try {
     console.log('Step 1: Fetching certificate data from backend...')
     
-    // Call backend API to get certificate data
     const response = await axios.post(`${API_URL}/certificate/sign/prepare`, {
       student_id: searchStudentId.value
     })
@@ -248,7 +247,6 @@ const generateSignature = async () => {
 
     console.log('Step 2: Generating signature with MetaMask...')
     
-    // Sign the certificate hash with MetaMask
     const signature = await CryptoUtils.signWithMetaMask(
       form.value.certHash,
       authStore.userAddress
@@ -282,7 +280,6 @@ const handleSign = async () => {
 
     console.log('Step 3: Submitting signature to blockchain...')
     
-    // Send transaction to smart contract using utility function
     const tx = await CryptoUtils.sendContractTransaction(
       CONTRACT_ADDRESS,
       CONTRACT_ABI,
@@ -296,7 +293,6 @@ const handleSign = async () => {
     txHash.value = tx.transactionHash
     successMessage.value = 'Certificate issuance signed successfully!'
     
-    // Refresh certificate data
     setTimeout(() => {
       searchCertificate()
     }, 2000)

@@ -8,7 +8,7 @@ class IssueCertificateRequest(BaseModel):
     birth_place: str
     birth_date: str
     issue_date: str
-    issuer_wallets: List[str]  # List of issuer addresses
+    issuer_wallets: List[str]
     requires_all_signatures: bool = True
 
 class IssueCertificateResponse(BaseModel):
@@ -17,11 +17,10 @@ class IssueCertificateResponse(BaseModel):
     student_id: Optional[str] = None
     ipfs_cid: Optional[str] = None
     cert_hash: Optional[str] = None
-    aes_key: Optional[str] = None  # Return key only once
+    aes_key: Optional[str] = None
 
 class VerifyCertificateRequest(BaseModel):
     student_id: str
-    # aes_key: str  
 
 class VerifyCertificateResponse(BaseModel):
     success: bool

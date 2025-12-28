@@ -17,7 +17,6 @@ export const useAuthStore = defineStore("auth", () => {
   const userRole = computed(() => user.value?.role)
   const userAddress = computed(() => user.value?.address)
 
-  // Setup axios interceptor to include JWT token in all requests
   const setupAxiosInterceptor = () => {
     axios.interceptors.request.use(
       (config) => {
@@ -41,10 +40,8 @@ export const useAuthStore = defineStore("auth", () => {
       jwtToken.value = token
       setupAxiosInterceptor()
       
-      // Validate token with backend
       const isValid = await validateToken(token)
       if (!isValid) {
-        // Token invalid, clear session
         await logout()
       }
     }
@@ -71,19 +68,16 @@ export const useAuthStore = defineStore("auth", () => {
       })
       
       if (response.data.success) {
-        // Store JWT token
         jwtToken.value = response.data.jwt_token
         localStorage.setItem(TOKEN_KEY, response.data.jwt_token)
         
-        // Store user info
         user.value = {
           address: response.data.wallet_address,
-          role: response.data.role, // Should be "issuer"
+          role: response.data.role,
           isAuthenticated: true
         }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(user.value))
         
-        // Setup axios interceptor with new token
         setupAxiosInterceptor()
         
         return true
