@@ -60,10 +60,25 @@
           </p>
 
           <router-link
-            to="/admin/issue"
+            to="/admin/revoke"
             class="block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-center font-medium hover:bg-accent/90 transition"
           >
           Revoke Diploma
+          </router-link>
+        </div>
+
+        <!-- Sign Certificate -->
+        <div class="bg-background border border-border rounded-xl p-8 hover:border-accent/50 transition">
+          <h3 class="text-xl font-semibold mb-2">Sign Certificate Issuance</h3>
+          <p class="text-muted-foreground text-sm mb-6">
+            Sign and approve certificate issuance as an issuer
+          </p>
+
+          <router-link
+            to="/admin/sign"
+            class="block px-4 py-2 bg-purple-600 text-white rounded-lg text-center font-medium hover:bg-purple-700 transition"
+          >
+          Sign Certificate
           </router-link>
         </div>
       </div>

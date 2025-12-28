@@ -1,6 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from app.schemas.certificate import IssueCertificateRequest, IssueCertificateResponse, VerifyCertificateRequest, VerifyCertificateResponse
+from app.schemas.certificate import (
+    IssueCertificateRequest, 
+    IssueCertificateResponse, 
+    VerifyCertificateRequest, 
+    VerifyCertificateResponse,
+    SignCertificateRequest,
+    SignCertificateResponse
+)
 from app.database.connection import get_db
 from app.services.ipfs import IPFSService
 from app.services.encryption import AESEncryptionService
@@ -208,3 +215,37 @@ async def get_all_certificates_from_blockchain():
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch certificates from blockchain: {str(e)}"
         )
+
+@router.post("/sign/prepare", response_model=SignCertificateResponse)
+async def prepare_certificate_signing(
+    request: SignCertificateRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Prepare certificate data for signing
+    Returns certificate hash and blockchain data for frontend to sign
+    """
+    try:
+        # 1. Check if certificate exists on blockchain
+        if not contract_service.certificate_exists(request.student_id):
+            raise HTTPException(status_code=404, detail="Certificate not found on blockchain")
+        
+        # 2. Get certificate data from blockchain
+        cert_data = contract_service.get_certificate(request.student_id)
+        if not cert_data:
+            raise HTTPException(status_code=404, detail="Failed to retrieve certificate data")
+        
+        # 3. Return data needed for signing
+        return SignCertificateResponse(
+            success=True,
+            message="Certificate data retrieved. Ready for signing.",
+            student_id=request.student_id,
+            cert_hash=cert_data['certHash'],
+            ipfs_cid=cert_data['ipfsCID'],
+            certificate_data=cert_data
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to prepare signing: {str(e)}")

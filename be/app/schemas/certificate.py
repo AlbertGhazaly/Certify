@@ -29,3 +29,14 @@ class VerifyCertificateResponse(BaseModel):
     certificate_text: Optional[str] = None
     ipfs_cid: Optional[str] = None
     message: str
+
+class SignCertificateRequest(BaseModel):
+    student_id: str
+
+class SignCertificateResponse(BaseModel):
+    success: bool
+    message: str
+    student_id: Optional[str] = None
+    cert_hash: Optional[str] = None
+    ipfs_cid: Optional[str] = None
+    certificate_data: Optional[dict] = None
