@@ -18,8 +18,8 @@
           <router-link to="/verify" class="text-gray-300 hover:text-purple-400 transition font-medium" :class="{ 'text-purple-400': $route.path === '/verify' }">
             Verify
           </router-link>
-          <router-link v-if="authStore.userRole === 'admin'" to="/admin/students" class="text-gray-300 hover:text-purple-400 transition font-medium" :class="{ 'text-purple-400': $route.path === '/admin/students' }">
-            Students
+          <router-link v-if="authStore.isAuthenticated" to="/admin" class="text-gray-300 hover:text-purple-400 transition font-medium" :class="{ 'text-purple-400': $route.path.startsWith('/admin') }">
+            Admin
           </router-link>
         </nav>
 
@@ -45,8 +45,8 @@
         <router-link to="/verify" class="text-xs text-gray-300 hover:text-purple-400 transition font-medium">
           Verify
         </router-link>
-        <router-link v-if="authStore.userRole === 'admin'" to="/admin/students" class="text-xs text-gray-300 hover:text-purple-400 transition font-medium">
-          Students
+        <router-link v-if="authStore.isAuthenticated" to="/admin" class="text-xs text-gray-300 hover:text-purple-400 transition font-medium">
+          Admin
         </router-link>
       </nav>
     </div>
