@@ -10,7 +10,7 @@
 
       <div class="grid md:grid-cols-2 gap-6">
         <!-- Student Management -->
-        <div class="bg-background border border-border rounded-xl p-8 hover:border-accent/50 transition">
+        <!-- <div class="bg-background border border-border rounded-xl p-8 hover:border-accent/50 transition">
           <h3 class="text-xl font-semibold mb-2">Student Management</h3>
           <p class="text-muted-foreground text-sm mb-6">
             Manage students and issued certificates
@@ -22,7 +22,7 @@
           >
             Go to Students
           </router-link>
-        </div>
+        </div> -->
 
         <!-- Issuer Registrations -->
         <!-- <div class="bg-background border border-border rounded-xl p-8 hover:border-accent/50 transition">
