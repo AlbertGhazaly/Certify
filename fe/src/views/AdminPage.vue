@@ -9,35 +9,7 @@
       </h1>
 
       <div class="grid md:grid-cols-2 gap-6">
-        <!-- Student Management -->
-        <div class="bg-background border border-border rounded-xl p-8 hover:border-accent/50 transition">
-          <h3 class="text-xl font-semibold mb-2">Student Management</h3>
-          <p class="text-muted-foreground text-sm mb-6">
-            Manage students and issued certificates
-          </p>
 
-          <router-link
-            to="/admin/students"
-            class="block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-center font-medium hover:bg-accent/90 transition"
-          >
-            Go to Students
-          </router-link>
-        </div>
-
-        <!-- Issuer Registrations -->
-        <div class="bg-background border border-border rounded-xl p-8 hover:border-accent/50 transition">
-          <h3 class="text-xl font-semibold mb-2">Issuer Registrations</h3>
-          <p class="text-muted-foreground text-sm mb-6">
-            Review and approve issuer registration requests
-          </p>
-
-          <router-link
-            to="/admin/issuer-registrations"
-            class="block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-center font-medium hover:bg-accent/90 transition"
-          >
-            Manage Issuers
-          </router-link>
-        </div>
         <!-- Issue Diploma -->
         <div class="bg-background border border-border rounded-xl p-8 hover:border-accent/50 transition">
           <h3 class="text-xl font-semibold mb-2">Issue New Diploma</h3>
@@ -52,20 +24,6 @@
           Issue New Diploma
           </router-link>
         </div>
-        <!-- Revoke Diploma -->
-        <div class="bg-background border border-border rounded-xl p-8 hover:border-accent/50 transition">
-          <h3 class="text-xl font-semibold mb-2">Revoke Diploma</h3>
-          <p class="text-muted-foreground text-sm mb-6">
-            Revoke or invalidate an issued diploma certificate
-          </p>
-
-          <router-link
-            to="/admin/revoke"
-            class="block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-center font-medium hover:bg-accent/90 transition"
-          >
-          Revoke Diploma
-          </router-link>
-        </div>
 
         <!-- Sign Certificate -->
         <div class="bg-background border border-border rounded-xl p-8 hover:border-accent/50 transition">
@@ -76,7 +34,7 @@
 
           <router-link
             to="/admin/sign"
-            class="block px-4 py-2 bg-purple-600 text-white rounded-lg text-center font-medium hover:bg-purple-700 transition"
+            class="block px-4 py-2 bg-accent text-accent-foreground rounded-lg text-center font-medium hover:bg-accent/90 transition"
           >
           Sign Certificate
           </router-link>
