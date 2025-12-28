@@ -55,7 +55,7 @@
         </h2>
 
         <p class="mb-4">{{ result.message }}</p>
-        <div v-if="result.file_url" class="mt-4">
+        <div v-if="result.valid &&result.file_url" class="mt-4">
           <p class="text-sm font-semibold">Certificate URL:</p>
 
           <div class="mt-4 space-y-3">
