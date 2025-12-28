@@ -184,4 +184,11 @@ export const getAllCertificatesFromBlockchain = async (): Promise<AllCertificate
   }
 };
 
+export const verifyCertificateByNIM = async (studentId: string) => {
+  const res = await apiClient.post('/certificate/verify', {
+    student_id: studentId,
+  })
+  return res.data
+}
+
 // Add more API functions as needed

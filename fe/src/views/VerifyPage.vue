@@ -63,7 +63,7 @@
 
 <script setup lang="ts">
   import { ref } from 'vue'
-  import axios from '@/lib/api' // axios instance
+  import { verifyCertificateByNIM } from '@/services/api'
   
   const studentId = ref('')
   const loading = ref(false)
@@ -71,23 +71,19 @@
   const result = ref<any>(null)
   
   const handleVerify = async () => {
+    loading.value = true
     error.value = ''
     result.value = null
-    loading.value = true
   
     try {
-      const res = await axios.post('/certificate/verify', {
-        student_id: studentId.value
-      })
+      const data = await verifyCertificateByNIM(studentId.value)
   
-      result.value = res.data
-  
-      if (!res.data.success) {
-        error.value = res.data.message
+      result.value = data
+      if (!data.success) {
+        error.value = data.message
       }
     } catch (err: any) {
-      error.value =
-        err.response?.data?.detail || 'Verification failed'
+      error.value = err.response?.data?.detail || 'Verification failed'
     } finally {
       loading.value = false
     }
