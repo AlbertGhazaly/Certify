@@ -35,15 +35,19 @@ class IPFSService:
         Retrieve file from IPFS by CID
         """
         try:
-            response = requests.get(
-                f'{self.ipfs_url}/api/v0/cat?arg={cid}',
+            response = requests.post(
+                f"{self.ipfs_url}/api/v0/cat",
+                params={"arg": cid},
+                stream=True,
                 timeout=30
             )
             response.raise_for_status()
             return response.content
+
         except Exception as e:
             print(f"Error retrieving from IPFS: {str(e)}")
             return None
+
     
     def get_gateway_url(self, cid: str) -> str:
         """
