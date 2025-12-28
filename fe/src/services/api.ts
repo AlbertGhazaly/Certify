@@ -153,4 +153,35 @@ export const deleteIssuerRegistration = async (
   }
 };
 
+/* =========================
+   CERTIFICATE BLOCKCHAIN API
+   ========================= */
+
+export interface BlockchainCertificate {
+  studentId: string;
+  certHash: string;
+  ipfsCID: string;
+  isValid: boolean;
+  timestampIssued: number;
+  timestampLastUpdated: number;
+  revokeReason: string;
+}
+
+export interface AllCertificatesResponse {
+  success: boolean;
+  certificates: BlockchainCertificate[];
+  count: number;
+}
+
+// Get all certificates from blockchain
+export const getAllCertificatesFromBlockchain = async (): Promise<AllCertificatesResponse> => {
+  try {
+    const response = await apiClient.get('/certificate/blockchain/all');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching certificates from blockchain:', error);
+    throw error;
+  }
+};
+
 // Add more API functions as needed
