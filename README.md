@@ -130,9 +130,18 @@ dependencies = [
 - **Blockchain**: Ethereum Sepolia Testnet
 - **Containerization**: Docker & Docker Compose
 
-## 👥 Role & Permission
+## Role & Permission
 
 | Role | Permissions |
 |------|-------------|
 | **Admin/Issuer** | Issue certificates, Sign proposals, Revoke certificates, Manage students |
 | **Public** | View certificates, Verify authenticity |
+
+
+## 👥 Members
+
+| NIM | Pembagian Tugas | 
+|------|-------------|
+| **13522150** | Autentikasi, Issue/Revoke Certificate,Smart Contract |
+| **13522151** | View&Verify Certificate, Smart Contract |
+| **13522152** |  Sign Certificate (multi signature), Smart Contract|
