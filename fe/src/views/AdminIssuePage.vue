@@ -5,7 +5,7 @@
         to="/admin"
         class="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition mb-8"
       >
-        <span>←</span> Back
+        <span>←</span> Kembali
       </router-link>
 
       <!-- Issue Certificate Section -->
@@ -94,9 +94,36 @@
             </div>
           </div>
 
-          <!-- Issuers Selection -->
+          <!-- Issuer Information -->
           <div>
-            <h2 class="text-lg font-semibold text-foreground mb-4">Penerbit</h2>
+            <h2 class="text-lg font-semibold text-foreground mb-4">Informasi Penerbit</h2>
+            <div class="bg-background border border-border rounded-lg p-4">
+              <div v-if="isLoadingIssuers" class="text-muted-foreground text-sm">
+                Memuat daftar penerbit...
+              </div>
+              <div v-else-if="allIssuers.length > 0">
+                <p class="text-sm text-foreground mb-2">
+                  <span class="font-semibold">Total Penerbit Aktif:</span> {{ allIssuers.length }}
+                </p>
+                <div class="space-y-1 max-h-40 overflow-y-auto">
+                  <p v-for="(issuer, index) in allIssuers" :key="issuer" class="text-xs font-mono text-muted-foreground">
+                    {{ index + 1 }}. {{ issuer }}
+                    <span v-if="issuer.toLowerCase() === authStore.userAddress?.toLowerCase()" class="text-accent ml-2 font-semibold">(Anda)</span>
+                  </p>
+                </div>
+                <p class="text-xs text-muted-foreground mt-3">
+                  Semua penerbit di atas akan ditetapkan untuk menandatangani ijazah ini.
+                </p>
+              </div>
+              <div v-else class="text-destructive text-sm">
+                Tidak ada penerbit yang tersedia. Silakan muat ulang halaman.
+              </div>
+            </div>
+          </div>
+
+          <!-- Signature Requirements -->
+          <div>
+            <h2 class="text-lg font-semibold text-foreground mb-4">Persyaratan Tanda Tangan</h2>
             <div class="space-y-2">
               <label class="flex items-center gap-2">
                 <input
@@ -107,7 +134,8 @@
                 <span class="text-sm text-foreground">Memerlukan tanda tangan semua penerbit</span>
               </label>
               <p class="text-xs text-muted-foreground">
-                Jika dicentang, semua penerbit harus menandatangani. Jika tidak, mayoritas sudah cukup.
+                Jika dicentang, semua {{ allIssuers.length }} penerbit harus menandatangani. 
+                Jika tidak, minimal {{ Math.floor(allIssuers.length / 2) + 1 }} tanda tangan diperlukan (mayoritas).
               </p>
             </div>
           </div>
@@ -116,7 +144,7 @@
           <div class="flex flex-col sm:flex-row gap-4 pt-4">
             <button
               type="submit"
-              :disabled="isSubmitting"
+              :disabled="isSubmitting || allIssuers.length === 0"
               class="flex-1 px-6 py-3 bg-accent text-accent-foreground rounded-lg font-medium hover:bg-accent/90 disabled:bg-muted disabled:cursor-not-allowed transition"
             >
               {{ isSubmitting ? 'Memproses...' : 'Terbitkan Ijazah' }}
@@ -216,7 +244,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
@@ -227,6 +255,10 @@ const CONTRACT_ADDRESS = '0x0AcCEf6086E744608C2B342041C07a261196FF67'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+// Issuer list from blockchain
+const allIssuers = ref<string[]>([])
+const isLoadingIssuers = ref(false)
 
 // Issue form state
 const form = ref({
@@ -254,6 +286,110 @@ const isRevoking = ref(false)
 const revokeSuccessMessage = ref('')
 const revokeErrorMessage = ref('')
 
+const CONTRACT_ABI_READ = [
+  {
+    "inputs": [],
+    "name": "getIssuerList",
+    "outputs": [{"name": "", "type": "address[]"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "studentId", "type": "string"}],
+    "name": "certificateExistsFor",
+    "outputs": [{"name": "", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "studentId", "type": "string"}],
+    "name": "isCertificateValid",
+    "outputs": [{"name": "", "type": "bool"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "studentId", "type": "string"}],
+    "name": "getCertificate",
+    "outputs": [
+      {"name": "_studentId", "type": "string"},
+      {"name": "certHash", "type": "bytes32"},
+      {"name": "ipfsCID", "type": "string"},
+      {"name": "issuerWallets", "type": "address[]"},
+      {"name": "issueSignatureCount", "type": "uint256"},
+      {"name": "revokeSignatureCount", "type": "uint256"},
+      {"name": "isValid", "type": "bool"},
+      {"name": "timestampIssued", "type": "uint256"},
+      {"name": "timestampLastUpdated", "type": "uint256"},
+      {"name": "revokeReason", "type": "string"},
+      {"name": "requiresAllSignatures", "type": "bool"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"name": "studentId", "type": "string"},
+      {"name": "issuer", "type": "address"}
+    ],
+    "name": "getRevokeSignature",
+    "outputs": [{"name": "", "type": "bytes"}],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
+
+// Fetch all issuers from blockchain (simplified - assumes all are active)
+const fetchIssuers = async () => {
+  isLoadingIssuers.value = true
+  try {
+    console.log('Fetching issuers from blockchain...')
+    
+    const { default: Web3 } = await import('web3')
+    const web3 = new Web3(window.ethereum)
+    
+    const contract = new web3.eth.Contract(CONTRACT_ABI_READ, CONTRACT_ADDRESS)
+    
+    // Get all issuer addresses - they are all considered active
+    const issuerAddresses = await contract.methods.getIssuerList().call()
+    console.log('Issuer addresses:', issuerAddresses)
+    
+    // Use all issuers directly (assume all in list are active)
+    allIssuers.value = issuerAddresses as string[]
+    
+    console.log('✓ Active issuers loaded:', allIssuers.value.length, 'issuers')
+    console.log('Issuers:', allIssuers.value)
+    
+  } catch (error: any) {
+    console.error('Error fetching issuers:', error)
+    errorMessage.value = 'Failed to load issuers from blockchain. Using default list.'
+    
+    // Fallback to default issuers
+    allIssuers.value = [
+      '0x9025bCF725Cce60610030A4824156346fDFAc97c',
+      '0xd924c8F1BA5f69292baDD9baf06893D7F90aeBCd',
+      '0xda2486286e253201de026A066f75Bb8B0696E8cD'
+    ]
+    console.log('Using default issuers (fallback):', allIssuers.value)
+  } finally {
+    isLoadingIssuers.value = false
+  }
+}
+
+// Load issuers when component mounts
+onMounted(() => {
+  if (window.ethereum) {
+    fetchIssuers()
+  } else {
+    // No MetaMask, use default issuers
+    allIssuers.value = [
+      '0x9025bCF725Cce60610030A4824156346fDFAc97c',
+      '0xd924c8F1BA5f69292baDD9baf06893D7F90aeBCd',
+      '0xda2486286e253201de026A066f75Bb8B0696E8cD'
+    ]
+  }
+})
+
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
   return date.toLocaleDateString('id-ID', {
@@ -269,6 +405,21 @@ const handleSubmit = async () => {
     return
   }
 
+  if (allIssuers.value.length === 0) {
+    errorMessage.value = 'Tidak ada penerbit yang tersedia. Silakan muat ulang halaman.'
+    return
+  }
+
+  // Check if current user is in the issuer list
+  const isActiveIssuer = allIssuers.value.some(
+    (issuer) => issuer.toLowerCase() === authStore.userAddress?.toLowerCase()
+  )
+  
+  if (!isActiveIssuer) {
+    errorMessage.value = 'Anda bukan penerbit yang terdaftar. Alamat Anda: ' + authStore.userAddress
+    return
+  }
+
   isSubmitting.value = true
   errorMessage.value = ''
   successMessage.value = ''
@@ -277,7 +428,7 @@ const handleSubmit = async () => {
   try {
     console.log('Step 1: Generating certificate and uploading to IPFS...')
     
-    // Step 1: Generate certificate and upload to IPFS
+    // Step 1: Generate certificate and upload to IPFS with ALL issuers
     const issueResponse = await axios.post(`${API_URL}/certificate/issue`, {
       student_name: form.value.studentName,
       student_id: form.value.studentId,
@@ -285,7 +436,7 @@ const handleSubmit = async () => {
       birth_place: form.value.birthPlace,
       birth_date: formatDate(form.value.birthDate),
       issue_date: formatDate(form.value.issueDate),
-      issuer_wallets: [authStore.userAddress],
+      issuer_wallets: allIssuers.value, // ✅ Use all issuers from blockchain
       requires_all_signatures: form.value.requiresAllSignatures
     })
 
@@ -297,6 +448,7 @@ const handleSubmit = async () => {
     aesKey.value = aes_key
 
     console.log('✓ Certificate prepared:', { student_id, ipfs_cid, cert_hash })
+    console.log('✓ Issuers assigned:', allIssuers.value.length)
 
     // Step 2: Sign the certificate hash with MetaMask
     console.log('Step 2: Requesting signature from MetaMask...')
@@ -328,10 +480,9 @@ const handleSubmit = async () => {
 
     console.log('Transaction parameters:', {
       studentId: student_id,
-      certHash: certHashBytes,
+      certHash: certHashBytes.substring(0, 20) + '...',
       ipfsCID: ipfs_cid,
-      issuerWallets: [authStore.userAddress],
-      signature: signature.substring(0, 20) + '...',
+      issuerCount: allIssuers.value.length,
       requiresAllSignatures: form.value.requiresAllSignatures
     })
 
@@ -344,7 +495,7 @@ const handleSubmit = async () => {
         student_id,
         certHashBytes,
         ipfs_cid,
-        [authStore.userAddress],
+        allIssuers.value, // ✅ Pass all issuers
         signature,
         form.value.requiresAllSignatures
       ],
@@ -353,7 +504,11 @@ const handleSubmit = async () => {
 
     console.log('✓ Transaction successful:', tx.transactionHash)
 
-    successMessage.value = `Ijazah berhasil diterbitkan untuk NIM ${student_id}!\n\nTransaction Hash: ${tx.transactionHash}\n\nIPFS CID: ${ipfs_cid}`
+    const requiredSignatures = form.value.requiresAllSignatures 
+      ? allIssuers.value.length 
+      : Math.floor(allIssuers.value.length / 2) + 1
+
+    successMessage.value = `Ijazah berhasil diusulkan untuk NIM ${student_id}!\n\nTransaction Hash: ${tx.transactionHash}\n\nIPFS CID: ${ipfs_cid}\n\nTotal Penerbit: ${allIssuers.value.length}\nTanda tangan diperlukan: ${requiredSignatures}\nTanda tangan saat ini: 1 (Anda)\n\n${allIssuers.value.length > 1 ? 'Penerbit lain perlu menandatangani untuk menerbitkan ijazah.' : 'Ijazah otomatis diterbitkan.'}`
     
     // Reset form after 10 seconds
     setTimeout(() => {
@@ -390,18 +545,61 @@ const handleRevoke = async () => {
   revokeSuccessMessage.value = ''
 
   try {
-    console.log('Step 1: Creating revocation signature message...')
+    console.log('Step 1: Checking certificate status...')
     
-    // Create message to sign for revocation
+    const { default: Web3 } = await import('web3')
+    const web3 = new Web3(window.ethereum)
+    
+    const contract = new web3.eth.Contract(CONTRACT_ABI_READ, CONTRACT_ADDRESS)
+    
+    // Check if certificate exists
+    const exists = await contract.methods.certificateExistsFor(revokeForm.value.studentId).call()
+    if (!exists) {
+      throw new Error('Sertifikat tidak ditemukan untuk NIM tersebut')
+    }
+    
+    // Check if certificate is valid
+    const isValid = await contract.methods.isCertificateValid(revokeForm.value.studentId).call()
+    if (!isValid) {
+      throw new Error('Sertifikat sudah dicabut atau tidak valid')
+    }
+    
+    // Get certificate details
+    const cert = await contract.methods.getCertificate(revokeForm.value.studentId).call()
+    const issuerWallets = cert.issuerWallets as string[]
+    
+    // Check if current user is an authorized issuer
+    const isAuthorizedIssuer = issuerWallets.some(
+      (wallet: string) => wallet.toLowerCase() === authStore.userAddress?.toLowerCase()
+    )
+    
+    if (!isAuthorizedIssuer) {
+      throw new Error('Anda tidak memiliki otorisasi untuk mencabut sertifikat ini')
+    }
+    
+    // Check if already signed revocation
+    const existingSignature = await contract.methods.getRevokeSignature(
+      revokeForm.value.studentId,
+      authStore.userAddress
+    ).call()
+    
+    if (existingSignature && existingSignature !== '0x') {
+      throw new Error('Anda sudah menandatangani pencabutan untuk sertifikat ini')
+    }
+    
+    console.log('✓ Certificate validation passed')
+    
+    // Step 2: Create message to sign for revocation
+    console.log('Step 2: Creating revocation signature message...')
     const message = `Revoke certificate for student ${revokeForm.value.studentId}: ${revokeForm.value.reason}`
     
-    // Step 2: Sign the revocation with MetaMask
-    console.log('Step 2: Requesting revocation signature from MetaMask...')
+    // Step 3: Sign the revocation with MetaMask
+    console.log('Step 3: Requesting revocation signature from MetaMask...')
     const signature = await CryptoUtils.signWithMetaMask(message, authStore.userAddress)
     console.log('✓ Revocation signature obtained:', signature.substring(0, 20) + '...')
 
-    // Step 3: Submit revocation to blockchain
-    console.log('Step 3: Submitting revocation to blockchain...')
+    // Step 4: Submit revocation to blockchain
+    console.log('Step 4: Submitting revocation to blockchain...')
     
     const REVOKE_ABI = [
       {
@@ -416,12 +614,6 @@ const handleRevoke = async () => {
         "type": "function"
       }
     ]
-
-    console.log('Revocation parameters:', {
-      studentId: revokeForm.value.studentId,
-      reason: revokeForm.value.reason,
-      signature: signature.substring(0, 20) + '...'
-    })
 
     // Send revocation transaction
     const tx = await CryptoUtils.sendContractTransaction(
@@ -438,7 +630,12 @@ const handleRevoke = async () => {
 
     console.log('✓ Revocation transaction successful:', tx.transactionHash)
 
-    revokeSuccessMessage.value = `Ijazah untuk NIM ${revokeForm.value.studentId} berhasil dicabut!\n\nAlasan: ${revokeForm.value.reason}\n\nTransaction Hash: ${tx.transactionHash}`
+    const requiredRevokes = cert.requiresAllSignatures 
+      ? issuerWallets.length 
+      : Math.floor(issuerWallets.length / 2) + 1
+    const currentRevokes = Number(cert.revokeSignatureCount) + 1
+
+    revokeSuccessMessage.value = `Tanda tangan pencabutan berhasil untuk NIM ${revokeForm.value.studentId}!\n\nAlasan: ${revokeForm.value.reason}\n\nTransaction Hash: ${tx.transactionHash}\n\nTanda tangan pencabutan: ${currentRevokes}/${requiredRevokes}\n\n${currentRevokes >= requiredRevokes ? 'Ijazah telah dicabut!' : 'Menunggu tanda tangan pencabutan dari penerbit lain.'}`
     
     // Reset form after 10 seconds
     setTimeout(() => {
@@ -452,12 +649,6 @@ const handleRevoke = async () => {
       revokeErrorMessage.value = 'Transaksi dibatalkan oleh pengguna'
     } else if (e.message?.includes('MetaMask')) {
       revokeErrorMessage.value = e.message
-    } else if (e.message?.includes('not valid or already revoked')) {
-      revokeErrorMessage.value = 'Sertifikat tidak valid atau sudah dicabut sebelumnya'
-    } else if (e.message?.includes('not an authorized issuer')) {
-      revokeErrorMessage.value = 'Anda tidak memiliki otorisasi untuk mencabut sertifikat ini'
-    } else if (e.message?.includes('does not exist')) {
-      revokeErrorMessage.value = 'Sertifikat tidak ditemukan untuk NIM tersebut'
     } else if (e.message) {
       revokeErrorMessage.value = e.message
     } else {
