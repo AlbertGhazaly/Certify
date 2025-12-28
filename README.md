@@ -1,66 +1,138 @@
-# Certify Project
+# 🎓 Certify - Blockchain-based Digital Certificate Management System
 
-## Overview
-Certify is a full-stack application that combines a Vue.js frontend with a FastAPI backend. The frontend is built using Vite and TypeScript, while the backend is powered by FastAPI and connects to a PostgreSQL database. This project aims to provide a seamless user experience for managing cryptographic keys and user data.
+## 📝 Deskripsi
 
-## Project Structure
+Certify adalah sistem manajemen sertifikat digital berbasis blockchain yang menggunakan teknologi kriptografi untuk menjamin keamanan dan keaslian ijazah/sertifikat. Sistem ini memanfaatkan Ethereum smart contract, IPFS untuk penyimpanan terdesentralisasi, dan tanda tangan digital multi-pihak untuk validasi sertifikat.
+
+**Fitur Utama:**
+- 🔐 Autentikasi berbasis kriptografi ECDSA
+- ⛓️ Smart contract untuk pencatatan sertifikat di blockchain Sepolia
+- 📦 Penyimpanan dokumen terdesentralisasi menggunakan IPFS
+- ✍️ Multi-signature untuk penerbitan dan pencabutan sertifikat
+- 🔍 Verifikasi keaslian sertifikat secara real-time
+
+## 🚀 Cara Menjalankan
+
+### Prasyarat
+- Docker & Docker Compose
+- Node.js v18+ (untuk development blockchain)
+- MetaMask atau wallet Ethereum lainnya
+
+### Langkah Instalasi
+
+1. **Clone repository**
+```bash
+git clone <repository-url>
+cd Certify
 ```
-Certify
-├── fe                  # Frontend application
-│   ├── src            # Source files for Vue application
-│   ├── public         # Public assets
-│   ├── index.html     # Main HTML file
-│   ├── package.json    # NPM configuration
-│   ├── vite.config.ts  # Vite configuration
-│   ├── tsconfig.json   # TypeScript configuration
-│   └── Dockerfile      # Dockerfile for frontend
-├── be                  # Backend application
-│   ├── app            # FastAPI application files
-│   ├── requirements.txt # Python dependencies
-│   └── Dockerfile      # Dockerfile for backend
-├── docker-compose.yml  # Docker Compose configuration
-├── .env                # Environment variables
-└── README.md           # Project documentation
+
+2. **Setup environment variables**
+```bash
+cp .env.example .env
+# Edit .env dan isi:
+# - SEPOLIA_URL: RPC URL Sepolia testnet
+# - CONTRACT_ADDRESS: Address smart contract yang sudah di-deploy
+# - SECRET_KEY: Secret key untuk JWT authentication
 ```
 
-## Frontend Setup
-The frontend is built using Vue.js with Vite for fast development and hot reloading. TypeScript is used for type safety and better development experience.
+3. **Jalankan dengan Docker Compose**
+```bash
+docker-compose up -d
+```
 
-### Key Files
-- **src/main.ts**: Entry point for the Vue application.
-- **src/App.vue**: Root component of the application.
-- **src/services/api.ts**: Handles API calls to the backend.
-- **src/services/crypto.ts**: Contains cryptographic functions.
-- **src/utils/localStorage.ts**: Utility functions for local storage management.
+4. **Akses aplikasi**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+- IPFS Gateway: http://localhost:8080
 
-## Backend Setup
-The backend is developed using FastAPI, providing a RESTful API for the frontend. It connects to a PostgreSQL database to manage user data.
+### Deploy Smart Contract (Opsional)
 
-### Database Schema
-The PostgreSQL database includes a user table with the following fields:
-- **role**: User's role in the application.
-- **username**: Unique username for the user.
-- **publicKeyX**: X coordinate of the user's public key.
-- **publicKeyY**: Y coordinate of the user's public key.
+```bash
+cd blockchain
+npm install
+npx hardhat compile
+npx hardhat run scripts/deploy.js --network sepolia
+```
 
-### Key Files
-- **app/main.py**: Entry point for the FastAPI application.
-- **app/models/user.py**: Defines the User model.
-- **app/schemas/user.py**: Pydantic schemas for user data validation.
-- **app/services/sepolia.py**: Functions for interacting with the Sepolia network.
+## ✨ Fitur Aplikasi
 
-## Docker Configuration
-The project uses Docker for containerization, allowing for easy deployment and management of the frontend and backend services. The `docker-compose.yml` file defines the services and networking between them.
+### 1. **Penerbitan Sertifikat**
+- Upload dan enkripsi dokumen sertifikat (PDF)
+- Penyimpanan file terenkripsi ke IPFS
+- Proposal sertifikat oleh issuer
+- Multi-signature signing untuk approval
+- Pencatatan hash sertifikat ke blockchain
 
-## Installation and Usage
-1. Clone the repository.
-2. Navigate to the project directory.
-3. Create a `.env` file with the necessary environment variables for the backend.
-4. Run `docker-compose up` to start the application.
-5. Access the frontend at `http://localhost:3000` and the backend at `http://localhost:8000`.
+### 2. **Pencabutan Sertifikat**
+- Proposal pencabutan dengan alasan
+- Multi-signature untuk validasi pencabutan
+- Update status di blockchain dengan timestamp
 
-## Contributing
-Contributions are welcome! Please submit a pull request or open an issue for any enhancements or bug fixes.
+### 3. **Verifikasi Sertifikat**
+- Verifikasi keaslian melalui blockchain
+- Validasi tanda tangan digital issuer
+- Pengecekan status (valid/revoked)
+- Download dokumen dari IPFS
 
-## License
-This project is licensed under the MIT License. See the LICENSE file for more details.
+### 4. **Explorer**
+- Daftar semua sertifikat yang diterbitkan
+- Detail transaksi blockchain
+- Riwayat penandatanganan
+- Status real-time dari smart contract
+
+## 🛠️ Teknologi & Dependencies
+
+### Frontend (Vue.js + TypeScript)
+```json
+{
+  "core": ["vue@3.5", "typescript@5.9", "vite@7.2"],
+  "state": ["pinia@3.0", "vue-router@4.6"],
+  "blockchain": ["ethers@5.8", "web3@4.3"],
+  "crypto": ["crypto-js@4.2"],
+  "storage": ["ipfs-http-client@56.0"],
+  "http": ["axios@1.6"],
+  "ui": ["tailwindcss@4.1", "lucide-vue-next"]
+}
+```
+
+### Backend (FastAPI + Python)
+```python
+dependencies = [
+    "FastAPI",           # Web framework
+    "uvicorn",           # ASGI server
+    "sqlalchemy",        # ORM
+    "asyncpg",           # PostgreSQL async driver
+    "pydantic",          # Data validation
+    "web3",              # Ethereum interaction
+    "ipfshttpclient",    # IPFS client
+    "cryptography",      # Enkripsi/dekripsi
+    "pycryptodome",      # Crypto utilities
+    "ecdsa",             # Digital signature
+    "eth-account",       # Ethereum account
+    "python-jose",       # JWT tokens
+    "passlib"            # Password hashing
+]
+```
+
+### Blockchain (Hardhat)
+```json
+{
+  "framework": "hardhat@2.27",
+  "toolbox": "@nomicfoundation/hardhat-toolbox@6.1",
+  "language": "Solidity ^0.8.20"
+}
+```
+
+### Infrastructure
+- **Database**: PostgreSQL 15
+- **Storage**: IPFS (go-ipfs)
+- **Blockchain**: Ethereum Sepolia Testnet
+- **Containerization**: Docker & Docker Compose
+
+## 👥 Role & Permission
+
+| Role | Permissions |
+|------|-------------|
+| **Admin/Issuer** | Issue certificates, Sign proposals, Revoke certificates, Manage students |
+| **Public** | View certificates, Verify authenticity |
