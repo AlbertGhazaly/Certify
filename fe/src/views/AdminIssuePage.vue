@@ -94,25 +94,63 @@
             </div>
           </div>
 
-          <!-- Issuer Information -->
+          <!-- Issuer Selection -->
           <div>
-            <h2 class="text-lg font-semibold text-foreground mb-4">Informasi Penerbit</h2>
+            <h2 class="text-lg font-semibold text-foreground mb-4">Pilih Penerbit *</h2>
             <div class="bg-background border border-border rounded-lg p-4">
               <div v-if="isLoadingIssuers" class="text-muted-foreground text-sm">
                 Memuat daftar penerbit...
               </div>
               <div v-else-if="allIssuers.length > 0">
-                <p class="text-sm text-foreground mb-2">
-                  <span class="font-semibold">Total Penerbit Aktif:</span> {{ allIssuers.length }}
+                <p class="text-sm text-foreground mb-3">
+                  Pilih penerbit yang akan menandatangani ijazah ini (minimal 2, termasuk Anda):
                 </p>
-                <div class="space-y-1 max-h-40 overflow-y-auto">
-                  <p v-for="(issuer, index) in allIssuers" :key="issuer" class="text-xs font-mono text-muted-foreground">
-                    {{ index + 1 }}. {{ issuer }}
-                    <span v-if="issuer.toLowerCase() === authStore.userAddress?.toLowerCase()" class="text-accent ml-2 font-semibold">(Anda)</span>
-                  </p>
+                <div class="space-y-2 mb-3">
+                  <label 
+                    v-for="(issuer, index) in allIssuers" 
+                    :key="issuer"
+                    class="flex items-start gap-3 p-2 rounded hover:bg-muted/50 transition"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="issuer"
+                      v-model="form.selectedIssuers"
+                      :disabled="issuer.toLowerCase() === authStore.userAddress?.toLowerCase()"
+                      class="mt-0.5 w-4 h-4 text-accent bg-background border-border rounded focus:ring-2 focus:ring-accent"
+                    />
+                    <div class="flex-1">
+                      <p class="text-xs font-mono text-foreground break-all">
+                        {{ issuer }}
+                      </p>
+                      <span v-if="issuer.toLowerCase() === authStore.userAddress?.toLowerCase()" 
+                        class="text-xs text-accent font-semibold">
+                        (Anda - Otomatis terpilih)
+                      </span>
+                    </div>
+                  </label>
                 </div>
-                <p class="text-xs text-muted-foreground mt-3">
-                  Semua penerbit di atas akan ditetapkan untuk menandatangani ijazah ini.
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="text-muted-foreground">
+                    Penerbit terpilih: {{ form.selectedIssuers.length }} dari {{ allIssuers.length }}
+                  </span>
+                  <button
+                    type="button"
+                    @click="selectAllIssuers"
+                    class="text-accent hover:underline"
+                  >
+                    Pilih Semua
+                  </button>
+                  <span class="text-muted-foreground">|</span>
+                  <button
+                    type="button"
+                    @click="clearIssuerSelection"
+                    class="text-accent hover:underline"
+                  >
+                    Hapus Semua
+                  </button>
+                </div>
+                <p v-if="issuerSelectionError" class="text-destructive text-xs mt-2">
+                  {{ issuerSelectionError }}
                 </p>
               </div>
               <div v-else class="text-destructive text-sm">
@@ -131,11 +169,15 @@
                   v-model="form.requiresAllSignatures"
                   class="w-4 h-4 text-accent bg-background border-border rounded focus:ring-2 focus:ring-accent"
                 />
-                <span class="text-sm text-foreground">Memerlukan tanda tangan semua penerbit</span>
+                <span class="text-sm text-foreground">Memerlukan tanda tangan semua penerbit yang dipilih</span>
               </label>
               <p class="text-xs text-muted-foreground">
-                Jika dicentang, semua {{ allIssuers.length }} penerbit harus menandatangani. 
-                Jika tidak, minimal {{ Math.floor(allIssuers.length / 2) + 1 }} tanda tangan diperlukan (mayoritas).
+                <span v-if="form.requiresAllSignatures">
+                  Semua {{ form.selectedIssuers.length }} penerbit yang dipilih harus menandatangani.
+                </span>
+                <span v-else>
+                  Minimal {{ Math.floor(form.selectedIssuers.length / 2) + 1 }} dari {{ form.selectedIssuers.length }} penerbit harus menandatangani (mayoritas).
+                </span>
               </p>
             </div>
           </div>
@@ -144,7 +186,7 @@
           <div class="flex flex-col sm:flex-row gap-4 pt-4">
             <button
               type="submit"
-              :disabled="isSubmitting || allIssuers.length === 0"
+              :disabled="isSubmitting || allIssuers.length === 0 || form.selectedIssuers.length < 2"
               class="flex-1 px-6 py-3 bg-accent text-accent-foreground rounded-lg font-medium hover:bg-accent/90 disabled:bg-muted disabled:cursor-not-allowed transition"
             >
               {{ isSubmitting ? 'Memproses...' : 'Terbitkan Ijazah' }}
@@ -244,7 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
@@ -259,6 +301,7 @@ const authStore = useAuthStore()
 // Issuer list from blockchain
 const allIssuers = ref<string[]>([])
 const isLoadingIssuers = ref(false)
+const issuerSelectionError = ref('')
 
 // Issue form state
 const form = ref({
@@ -268,7 +311,8 @@ const form = ref({
   issueDate: '',
   birthPlace: '',
   birthDate: '',
-  requiresAllSignatures: true
+  requiresAllSignatures: true,
+  selectedIssuers: [] as string[]
 })
 
 const isSubmitting = ref(false)
@@ -339,7 +383,7 @@ const CONTRACT_ABI_READ = [
   }
 ]
 
-// Fetch all issuers from blockchain (simplified - assumes all are active)
+// Fetch all issuers from blockchain
 const fetchIssuers = async () => {
   isLoadingIssuers.value = true
   try {
@@ -350,15 +394,25 @@ const fetchIssuers = async () => {
     
     const contract = new web3.eth.Contract(CONTRACT_ABI_READ, CONTRACT_ADDRESS)
     
-    // Get all issuer addresses - they are all considered active
+    // Get all issuer addresses
     const issuerAddresses = await contract.methods.getIssuerList().call()
     console.log('Issuer addresses:', issuerAddresses)
     
-    // Use all issuers directly (assume all in list are active)
     allIssuers.value = issuerAddresses as string[]
     
+    // Auto-select current user if they are an issuer
+    if (authStore.userAddress) {
+      const userAddress = authStore.userAddress.toLowerCase()
+      const isUserIssuer = allIssuers.value.some(
+        issuer => issuer.toLowerCase() === userAddress
+      )
+      
+      if (isUserIssuer) {
+        form.value.selectedIssuers = [authStore.userAddress]
+      }
+    }
+    
     console.log('✓ Active issuers loaded:', allIssuers.value.length, 'issuers')
-    console.log('Issuers:', allIssuers.value)
     
   } catch (error: any) {
     console.error('Error fetching issuers:', error)
@@ -370,9 +424,57 @@ const fetchIssuers = async () => {
       '0xd924c8F1BA5f69292baDD9baf06893D7F90aeBCd',
       '0xda2486286e253201de026A066f75Bb8B0696E8cD'
     ]
+    
+    // Auto-select current user if they are in fallback list
+    if (authStore.userAddress) {
+      const userAddress = authStore.userAddress.toLowerCase()
+      const isUserIssuer = allIssuers.value.some(
+        issuer => issuer.toLowerCase() === userAddress
+      )
+      
+      if (isUserIssuer) {
+        form.value.selectedIssuers = [authStore.userAddress]
+      }
+    }
+    
     console.log('Using default issuers (fallback):', allIssuers.value)
   } finally {
     isLoadingIssuers.value = false
+  }
+}
+
+// Watch for changes in selected issuers to validate
+watch(() => form.value.selectedIssuers, (newValue) => {
+  issuerSelectionError.value = ''
+  
+  if (newValue.length < 2) {
+    issuerSelectionError.value = 'Minimal 2 penerbit harus dipilih'
+  }
+  
+  // Ensure current user is always included
+  if (authStore.userAddress) {
+    const userAddress = authStore.userAddress.toLowerCase()
+    const isUserIncluded = newValue.some(
+      issuer => issuer.toLowerCase() === userAddress
+    )
+    
+    if (!isUserIncluded) {
+      issuerSelectionError.value = 'Anda harus termasuk dalam daftar penerbit yang dipilih'
+    }
+  }
+})
+
+// Select all issuers
+const selectAllIssuers = () => {
+  form.value.selectedIssuers = [...allIssuers.value]
+}
+
+// Clear issuer selection (keep current user)
+const clearIssuerSelection = () => {
+  if (authStore.userAddress) {
+    form.value.selectedIssuers = [authStore.userAddress]
+  } else {
+    form.value.selectedIssuers = []
   }
 }
 
@@ -387,6 +489,18 @@ onMounted(() => {
       '0xd924c8F1BA5f69292baDD9baf06893D7F90aeBCd',
       '0xda2486286e253201de026A066f75Bb8B0696E8cD'
     ]
+    
+    // Auto-select current user
+    if (authStore.userAddress) {
+      const userAddress = authStore.userAddress.toLowerCase()
+      const isUserIssuer = allIssuers.value.some(
+        issuer => issuer.toLowerCase() === userAddress
+      )
+      
+      if (isUserIssuer) {
+        form.value.selectedIssuers = [authStore.userAddress]
+      }
+    }
   }
 })
 
@@ -405,18 +519,20 @@ const handleSubmit = async () => {
     return
   }
 
-  if (allIssuers.value.length === 0) {
-    errorMessage.value = 'Tidak ada penerbit yang tersedia. Silakan muat ulang halaman.'
+  // Validate issuer selection
+  if (form.value.selectedIssuers.length < 2) {
+    errorMessage.value = 'Minimal 2 penerbit harus dipilih'
     return
   }
 
-  // Check if current user is in the issuer list
-  const isActiveIssuer = allIssuers.value.some(
-    (issuer) => issuer.toLowerCase() === authStore.userAddress?.toLowerCase()
+  // Check if current user is included
+  const userAddress = authStore.userAddress.toLowerCase()
+  const isUserIncluded = form.value.selectedIssuers.some(
+    issuer => issuer.toLowerCase() === userAddress
   )
   
-  if (!isActiveIssuer) {
-    errorMessage.value = 'Anda bukan penerbit yang terdaftar. Alamat Anda: ' + authStore.userAddress
+  if (!isUserIncluded) {
+    errorMessage.value = 'Anda harus termasuk dalam daftar penerbit yang dipilih'
     return
   }
 
@@ -428,7 +544,7 @@ const handleSubmit = async () => {
   try {
     console.log('Step 1: Generating certificate and uploading to IPFS...')
     
-    // Step 1: Generate certificate and upload to IPFS with ALL issuers
+    // Step 1: Generate certificate and upload to IPFS with selected issuers
     const issueResponse = await axios.post(`${API_URL}/certificate/issue`, {
       student_name: form.value.studentName,
       student_id: form.value.studentId,
@@ -436,7 +552,7 @@ const handleSubmit = async () => {
       birth_place: form.value.birthPlace,
       birth_date: formatDate(form.value.birthDate),
       issue_date: formatDate(form.value.issueDate),
-      issuer_wallets: allIssuers.value, // ✅ Use all issuers from blockchain
+      issuer_wallets: form.value.selectedIssuers, // ✅ Use selected issuers
       requires_all_signatures: form.value.requiresAllSignatures
     })
 
@@ -448,7 +564,7 @@ const handleSubmit = async () => {
     aesKey.value = aes_key
 
     console.log('✓ Certificate prepared:', { student_id, ipfs_cid, cert_hash })
-    console.log('✓ Issuers assigned:', allIssuers.value.length)
+    console.log('✓ Issuers assigned:', form.value.selectedIssuers.length)
 
     // Step 2: Sign the certificate hash with MetaMask
     console.log('Step 2: Requesting signature from MetaMask...')
@@ -475,18 +591,18 @@ const handleSubmit = async () => {
       }
     ]
 
-    // Convert hash to bytes32 (ensure proper format)
+    // Convert hash to bytes32
     const certHashBytes = '0x' + cert_hash
 
     console.log('Transaction parameters:', {
       studentId: student_id,
       certHash: certHashBytes.substring(0, 20) + '...',
       ipfsCID: ipfs_cid,
-      issuerCount: allIssuers.value.length,
+      issuerCount: form.value.selectedIssuers.length,
       requiresAllSignatures: form.value.requiresAllSignatures
     })
 
-    // Send transaction using the utility function
+    // Send transaction
     const tx = await CryptoUtils.sendContractTransaction(
       CONTRACT_ADDRESS,
       CONTRACT_ABI,
@@ -495,7 +611,7 @@ const handleSubmit = async () => {
         student_id,
         certHashBytes,
         ipfs_cid,
-        allIssuers.value, // ✅ Pass all issuers
+        form.value.selectedIssuers, // ✅ Pass selected issuers
         signature,
         form.value.requiresAllSignatures
       ],
@@ -505,10 +621,10 @@ const handleSubmit = async () => {
     console.log('✓ Transaction successful:', tx.transactionHash)
 
     const requiredSignatures = form.value.requiresAllSignatures 
-      ? allIssuers.value.length 
-      : Math.floor(allIssuers.value.length / 2) + 1
+      ? form.value.selectedIssuers.length 
+      : Math.floor(form.value.selectedIssuers.length / 2) + 1
 
-    successMessage.value = `Ijazah berhasil diusulkan untuk NIM ${student_id}!\n\nTransaction Hash: ${tx.transactionHash}\n\nIPFS CID: ${ipfs_cid}\n\nTotal Penerbit: ${allIssuers.value.length}\nTanda tangan diperlukan: ${requiredSignatures}\nTanda tangan saat ini: 1 (Anda)\n\n${allIssuers.value.length > 1 ? 'Penerbit lain perlu menandatangani untuk menerbitkan ijazah.' : 'Ijazah otomatis diterbitkan.'}`
+    successMessage.value = `Ijazah berhasil diusulkan untuk NIM ${student_id}!\n\nTransaction Hash: ${tx.transactionHash}\n\nIPFS CID: ${ipfs_cid}\n\nTotal Penerbit: ${form.value.selectedIssuers.length}\nTanda tangan diperlukan: ${requiredSignatures}\nTanda tangan saat ini: 1 (Anda)\n\n${form.value.selectedIssuers.length > 1 ? 'Penerbit lain perlu menandatangani untuk menerbitkan ijazah.' : 'Ijazah otomatis diterbitkan.'}`
     
     // Reset form after 10 seconds
     setTimeout(() => {
@@ -630,12 +746,7 @@ const handleRevoke = async () => {
 
     console.log('✓ Revocation transaction successful:', tx.transactionHash)
 
-    const requiredRevokes = cert.requiresAllSignatures 
-      ? issuerWallets.length 
-      : Math.floor(issuerWallets.length / 2) + 1
-    const currentRevokes = Number(cert.revokeSignatureCount) + 1
-
-    revokeSuccessMessage.value = `Tanda tangan pencabutan berhasil untuk NIM ${revokeForm.value.studentId}!\n\nAlasan: ${revokeForm.value.reason}\n\nTransaction Hash: ${tx.transactionHash}\n\nTanda tangan pencabutan: ${currentRevokes}/${requiredRevokes}\n\n${currentRevokes >= requiredRevokes ? 'Ijazah telah dicabut!' : 'Menunggu tanda tangan pencabutan dari penerbit lain.'}`
+    revokeSuccessMessage.value = `Ijazah untuk NIM ${revokeForm.value.studentId} berhasil dicabut!\n\nAlasan: ${revokeForm.value.reason}\n\nTransaction Hash: ${tx.transactionHash}\n\nSertifikat langsung dicabut karena setidaknya satu penerbit telah menandatangani pencabutan.`
     
     // Reset form after 10 seconds
     setTimeout(() => {
@@ -667,11 +778,13 @@ const resetForm = () => {
     issueDate: '',
     birthPlace: '',
     birthDate: '',
-    requiresAllSignatures: true
+    requiresAllSignatures: true,
+    selectedIssuers: authStore.userAddress ? [authStore.userAddress] : []
   }
   successMessage.value = ''
   errorMessage.value = ''
   aesKey.value = ''
+  issuerSelectionError.value = ''
 }
 
 const resetRevokeForm = () => {
