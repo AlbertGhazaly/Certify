@@ -12,6 +12,7 @@ from app.database.connection import get_db
 from app.services.ipfs import IPFSService
 from app.services.encryption import AESEncryptionService
 from app.services.read_contract import ContractService
+from app.services.certificate import CertificateService
 from app.models.certificate_key import CertificateKey
 import hashlib
 from datetime import datetime
@@ -21,6 +22,7 @@ router = APIRouter(tags=["certificate"])
 ipfs_service = IPFSService()
 encryption_service = AESEncryptionService()
 contract_service = ContractService()
+certificate_service = CertificateService()
 
 # Template ijazah Indonesia
 IJAZAH_TEMPLATE = """Kementerian Pendidikan Tinggi, Sains, dan Teknologi
@@ -153,10 +155,14 @@ async def verify_certificate(
                 message="Failed to retrieve certificate from IPFS",
                 ipfs_cid=ipfs_cid
             )
+        certificate_key = certificate_service.get_certificate_by_nim(db, request.student_id)
+        if not certificate_key:
+            return "AES Key tidak ditemukan di database"
+        aes_key = certificate_key.aes_key
         
         # 5. Decrypt certificate
         try:
-            decrypted_data = encryption_service.decrypt(encrypted_data, request.aes_key)
+            decrypted_data = encryption_service.decrypt(encrypted_data, aes_key)
             certificate_text = decrypted_data.decode('utf-8')
         except Exception as e:
             return VerifyCertificateResponse(
