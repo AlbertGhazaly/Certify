@@ -50,7 +50,7 @@ export namespace CryptoUtils {
   }
 
   /**
-   * Send transaction to smart contract using MetaMask
+   * Send transaction to smart contract using MetaMask with proper gas estimation
    */
   export async function sendContractTransaction(
     contractAddress: string,
@@ -71,16 +71,87 @@ export namespace CryptoUtils {
       // Create contract instance
       const contract = new web3.eth.Contract(abi, contractAddress)
       
-      // Send transaction
-      const tx = await contract.methods[methodName](...params).send({ from })
+      // Try to estimate gas
+      let gasLimit: number
+      try {
+        console.log('Estimating gas for', methodName, '...')
+        const gasEstimate = await contract.methods[methodName](...params).estimateGas({ from })
+        console.log('Gas estimate:', gasEstimate.toString())
+        
+        // Add 20% buffer to gas estimate
+        gasLimit = Math.floor(Number(gasEstimate) * 1.2)
+        
+        // Ensure gas limit doesn't exceed Sepolia network cap (~16M)
+        const maxGas = 10000000 // 10M to be safe
+        if (gasLimit > maxGas) {
+          console.warn(`Gas limit ${gasLimit} exceeds max, using ${maxGas}`)
+          gasLimit = maxGas
+        }
+      } catch (estimateError: any) {
+        console.warn('Gas estimation failed:', estimateError.message)
+        
+        // Use reasonable default gas limits for different operations
+        const defaultGasLimits: { [key: string]: number } = {
+          'proposeCertificate': 500000,
+          'signCertificateIssuance': 200000,
+          'signCertificateRevocation': 200000,
+          'addIssuer': 150000,
+          'removeIssuer': 100000,
+          'updateIssuerPublicKey': 100000
+        }
+        gasLimit = defaultGasLimits[methodName] || 300000
+        console.log('Using default gas limit:', gasLimit)
+      }
       
+      console.log('Final gas limit:', gasLimit)
+      
+      // Get current gas price
+      const gasPrice = await web3.eth.getGasPrice()
+      console.log('Gas price:', gasPrice.toString())
+      
+      // Send transaction with proper gas settings
+      const tx = await contract.methods[methodName](...params).send({
+        from,
+        gas: gasLimit,
+        gasPrice: gasPrice
+      })
+      
+      console.log('Transaction successful:', tx.transactionHash)
       return tx
+      
     } catch (error: any) {
       console.error('Transaction error:', error)
+      
+      // Handle specific error cases
       if (error.code === 4001) {
         throw new Error('User rejected transaction')
       }
-      throw error
+      
+      if (error.message?.includes('gas limit too high')) {
+        throw new Error('Transaction requires too much gas. The contract may have failed validation.')
+      }
+      
+      if (error.message?.includes('insufficient funds')) {
+        throw new Error('Insufficient funds for gas fees')
+      }
+      
+      if (error.message?.includes('execution reverted')) {
+        // Try to extract revert reason
+        const revertMatch = error.message.match(/reverted: (.+?)(?:\n|$)/)
+        const revertReason = revertMatch ? revertMatch[1] : 'Transaction reverted by contract'
+        throw new Error(revertReason)
+      }
+      
+      if (error.message?.includes('nonce too low')) {
+        throw new Error('Transaction nonce error. Please try again.')
+      }
+      
+      if (error.message?.includes('replacement transaction underpriced')) {
+        throw new Error('Previous transaction still pending. Please wait or increase gas price.')
+      }
+      
+      // Re-throw with original message if no specific handling
+      throw new Error(error.message || 'Transaction failed')
     }
   }
 

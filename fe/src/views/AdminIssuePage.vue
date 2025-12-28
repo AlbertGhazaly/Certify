@@ -8,7 +8,8 @@
         <span>←</span> Back
       </router-link>
 
-      <div class="bg-card border border-border rounded-xl p-6 sm:p-8">
+      <!-- Issue Certificate Section -->
+      <div class="bg-card border border-border rounded-xl p-6 sm:p-8 mb-8">
         <h1 class="text-3xl sm:text-4xl font-bold text-foreground mb-2">Terbitkan Ijazah Baru</h1>
         <p class="text-muted-foreground mb-8">Buat dan terbitkan sertifikat ijazah digital</p>
 
@@ -133,7 +134,7 @@
           <!-- Messages -->
           <div v-if="successMessage" class="bg-accent/10 border border-accent/50 rounded-lg p-4">
             <p class="text-accent font-semibold mb-2">✓ Berhasil!</p>
-            <p class="text-sm text-foreground">{{ successMessage }}</p>
+            <p class="text-sm text-foreground whitespace-pre-line">{{ successMessage }}</p>
             <div v-if="aesKey" class="mt-4 p-3 bg-background rounded border border-border">
               <p class="text-xs text-muted-foreground mb-1">Kunci AES (simpan dengan aman):</p>
               <code class="text-xs text-accent break-all">{{ aesKey }}</code>
@@ -142,6 +143,71 @@
           <div v-if="errorMessage" class="bg-destructive/10 border border-destructive/50 rounded-lg p-4 text-destructive">
             <p class="font-semibold mb-1">✗ Error</p>
             <p class="text-sm">{{ errorMessage }}</p>
+          </div>
+        </form>
+      </div>
+
+      <!-- Revoke Certificate Section -->
+      <div class="bg-card border border-border rounded-xl p-6 sm:p-8">
+        <h1 class="text-3xl sm:text-4xl font-bold text-foreground mb-2">Cabut Ijazah</h1>
+        <p class="text-muted-foreground mb-8">Cabut sertifikat ijazah yang sudah diterbitkan</p>
+
+        <form @submit.prevent="handleRevoke" class="space-y-8">
+          <!-- Revoke Information -->
+          <div>
+            <h2 class="text-lg font-semibold text-foreground mb-4">Informasi Pencabutan</h2>
+            <div class="grid grid-cols-1 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-foreground mb-2">NIM *</label>
+                <input
+                  v-model="revokeForm.studentId"
+                  type="text"
+                  required
+                  pattern="\d{8}"
+                  placeholder="8 digit NIM yang akan dicabut"
+                  class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-foreground mb-2">Alasan Pencabutan *</label>
+                <textarea
+                  v-model="revokeForm.reason"
+                  required
+                  rows="3"
+                  placeholder="Masukkan alasan pencabutan ijazah"
+                  class="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent resize-none"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Revoke -->
+          <div class="flex flex-col sm:flex-row gap-4 pt-4">
+            <button
+              type="submit"
+              :disabled="isRevoking"
+              class="flex-1 px-6 py-3 bg-destructive text-destructive-foreground rounded-lg font-medium hover:bg-destructive/90 disabled:bg-muted disabled:cursor-not-allowed transition"
+            >
+              {{ isRevoking ? 'Memproses...' : 'Cabut Ijazah' }}
+            </button>
+            <button
+              type="button"
+              @click="resetRevokeForm"
+              :disabled="isRevoking"
+              class="px-6 py-3 bg-secondary text-foreground rounded-lg font-medium hover:bg-secondary/80 disabled:opacity-50 transition"
+            >
+              Bersihkan
+            </button>
+          </div>
+
+          <!-- Revoke Messages -->
+          <div v-if="revokeSuccessMessage" class="bg-accent/10 border border-accent/50 rounded-lg p-4">
+            <p class="text-accent font-semibold mb-2">✓ Berhasil!</p>
+            <p class="text-sm text-foreground whitespace-pre-line">{{ revokeSuccessMessage }}</p>
+          </div>
+          <div v-if="revokeErrorMessage" class="bg-destructive/10 border border-destructive/50 rounded-lg p-4 text-destructive">
+            <p class="font-semibold mb-1">✗ Error</p>
+            <p class="text-sm">{{ revokeErrorMessage }}</p>
           </div>
         </form>
       </div>
@@ -162,6 +228,7 @@ const CONTRACT_ADDRESS = '0x0AcCEf6086E744608C2B342041C07a261196FF67'
 const router = useRouter()
 const authStore = useAuthStore()
 
+// Issue form state
 const form = ref({
   studentName: '',
   studentId: '',
@@ -176,6 +243,16 @@ const isSubmitting = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 const aesKey = ref('')
+
+// Revoke form state
+const revokeForm = ref({
+  studentId: '',
+  reason: ''
+})
+
+const isRevoking = ref(false)
+const revokeSuccessMessage = ref('')
+const revokeErrorMessage = ref('')
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
@@ -302,6 +379,95 @@ const handleSubmit = async () => {
   }
 }
 
+const handleRevoke = async () => {
+  if (!authStore.userAddress) {
+    revokeErrorMessage.value = 'Anda harus login terlebih dahulu'
+    return
+  }
+
+  isRevoking.value = true
+  revokeErrorMessage.value = ''
+  revokeSuccessMessage.value = ''
+
+  try {
+    console.log('Step 1: Creating revocation signature message...')
+    
+    // Create message to sign for revocation
+    const message = `Revoke certificate for student ${revokeForm.value.studentId}: ${revokeForm.value.reason}`
+    
+    // Step 2: Sign the revocation with MetaMask
+    console.log('Step 2: Requesting revocation signature from MetaMask...')
+    const signature = await CryptoUtils.signWithMetaMask(message, authStore.userAddress)
+    console.log('✓ Revocation signature obtained:', signature.substring(0, 20) + '...')
+
+    // Step 3: Submit revocation to blockchain
+    console.log('Step 3: Submitting revocation to blockchain...')
+    
+    const REVOKE_ABI = [
+      {
+        "inputs": [
+          {"name": "studentId", "type": "string"},
+          {"name": "reason", "type": "string"},
+          {"name": "signature", "type": "bytes"}
+        ],
+        "name": "signCertificateRevocation",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ]
+
+    console.log('Revocation parameters:', {
+      studentId: revokeForm.value.studentId,
+      reason: revokeForm.value.reason,
+      signature: signature.substring(0, 20) + '...'
+    })
+
+    // Send revocation transaction
+    const tx = await CryptoUtils.sendContractTransaction(
+      CONTRACT_ADDRESS,
+      REVOKE_ABI,
+      'signCertificateRevocation',
+      [
+        revokeForm.value.studentId,
+        revokeForm.value.reason,
+        signature
+      ],
+      authStore.userAddress
+    )
+
+    console.log('✓ Revocation transaction successful:', tx.transactionHash)
+
+    revokeSuccessMessage.value = `Ijazah untuk NIM ${revokeForm.value.studentId} berhasil dicabut!\n\nAlasan: ${revokeForm.value.reason}\n\nTransaction Hash: ${tx.transactionHash}`
+    
+    // Reset form after 10 seconds
+    setTimeout(() => {
+      resetRevokeForm()
+    }, 10000)
+
+  } catch (e: any) {
+    console.error('Error during certificate revocation:', e)
+    
+    if (e.code === 4001) {
+      revokeErrorMessage.value = 'Transaksi dibatalkan oleh pengguna'
+    } else if (e.message?.includes('MetaMask')) {
+      revokeErrorMessage.value = e.message
+    } else if (e.message?.includes('not valid or already revoked')) {
+      revokeErrorMessage.value = 'Sertifikat tidak valid atau sudah dicabut sebelumnya'
+    } else if (e.message?.includes('not an authorized issuer')) {
+      revokeErrorMessage.value = 'Anda tidak memiliki otorisasi untuk mencabut sertifikat ini'
+    } else if (e.message?.includes('does not exist')) {
+      revokeErrorMessage.value = 'Sertifikat tidak ditemukan untuk NIM tersebut'
+    } else if (e.message) {
+      revokeErrorMessage.value = e.message
+    } else {
+      revokeErrorMessage.value = 'Gagal mencabut ijazah. Silakan coba lagi.'
+    }
+  } finally {
+    isRevoking.value = false
+  }
+}
+
 const resetForm = () => {
   form.value = {
     studentName: '',
@@ -315,5 +481,14 @@ const resetForm = () => {
   successMessage.value = ''
   errorMessage.value = ''
   aesKey.value = ''
+}
+
+const resetRevokeForm = () => {
+  revokeForm.value = {
+    studentId: '',
+    reason: ''
+  }
+  revokeSuccessMessage.value = ''
+  revokeErrorMessage.value = ''
 }
 </script>
