@@ -1,0 +1,23 @@
+Kementerian Pendidikan Tinggi, Sains, dan Teknologi
+Institut Teknologi Bandung
+
+dengan ini menyatakan bahwa
+
+[Nama]
+NIM [NIM:string]
+
+lahir di  Sibolga, tanggal [tanggal lahir], telah menyelesaikan dengan baik dan sudah memenuhi semua persyaratan pada Program Studi Teknik Sipil
+
+Oleh sebab itu kepadanya diberikan gelar
+
+[Jurusan]
+
+beserta hak dan segala kewajiban yang melekat pada gelar tersebut. Diberikan di Bandung tanggal [tanggal diterbitkan]
+
+Rektor
+
+     [URL Ijazah dalam bentuk Teks / QR code]
+
+Prof. Dr. Ir. Tatacipta Dirgantara, M.T.
+NIP: 1243568790
+

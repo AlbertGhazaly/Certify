@@ -1,90 +1,194 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
+from app.schemas.certificate import IssueCertificateRequest, IssueCertificateResponse, VerifyCertificateRequest, VerifyCertificateResponse
 from app.database.connection import get_db
-from app.schemas.certificate import CertificateCreate, CertificateResponse, CertificateUpdate
-from app.services.certificate import CertificateService
-from app.services.student import StudentService
+from app.services.ipfs import IPFSService
+from app.services.encryption import AESEncryptionService
+from app.services.read_contract import ContractService
+from app.models.certificate_key import CertificateKey
+import hashlib
+from datetime import datetime
 
-router = APIRouter()
+router = APIRouter(tags=["certificate"])
 
-# ==================== CERTIFICATE ENDPOINTS ====================
+ipfs_service = IPFSService()
+encryption_service = AESEncryptionService()
+contract_service = ContractService()
 
-@router.post("/certificates", response_model=CertificateResponse, status_code=status.HTTP_201_CREATED)
-async def create_certificate(
-    certificate_data: CertificateCreate,
+# Template ijazah Indonesia
+IJAZAH_TEMPLATE = """Kementerian Pendidikan Tinggi, Sains, dan Teknologi
+Institut Teknologi Bandung
+
+dengan ini menyatakan bahwa
+
+{student_name}
+NIM {student_id}
+
+lahir di {birth_place}, tanggal {birth_date}, telah menyelesaikan dengan baik dan sudah memenuhi semua persyaratan pada Program Studi {degree}
+
+Oleh sebab itu kepadanya diberikan gelar
+
+SARJANA TEKNIK
+
+beserta hak dan segala kewajiban yang melekat pada gelar tersebut. Diberikan di Bandung tanggal {issue_date}
+
+Rektor
+
+     
+
+Prof. Dr. Ir. Tatacipta Dirgantara, M.T.
+NIP: 1243568790
+"""
+
+@router.post("/issue", response_model=IssueCertificateResponse)
+async def issue_certificate(
+    request: IssueCertificateRequest,
     db: Session = Depends(get_db)
 ):
     """
-    Create a new certificate record
-    - If AES key is not provided, it will be auto-generated
+    Issue a new certificate
+    Flow: Generate txt -> Encrypt -> Upload to IPFS -> Store key -> Return for signing
     """
-    # Check if student exists
-    student = StudentService.get_student_by_nim(db, certificate_data.nim)
-    if not student:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student with this NIM not found. Create student record first."
-        )
-    
-    # Check if certificate already exists
-    existing_certificate = CertificateService.get_certificate_by_nim(db, certificate_data.nim)
-    if existing_certificate:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Certificate for this NIM already exists"
-        )
-    
     try:
-        certificate = CertificateService.create_certificate(
-            db=db,
-            nim=certificate_data.nim,
-            aes_key=certificate_data.aes_key
+        # 1. Check if certificate already exists
+        if contract_service.certificate_exists(request.student_id):
+            raise HTTPException(status_code=400, detail="Certificate already exists for this student ID")
+        
+        # 2. Generate certificate text
+        certificate_text = IJAZAH_TEMPLATE.format(
+            student_name=request.student_name,
+            student_id=request.student_id,
+            birth_place=request.birth_place,
+            birth_date=request.birth_date,
+            degree=request.degree,
+            issue_date=request.issue_date
         )
-        return certificate
+        
+        # 3. Generate AES key
+        aes_key = encryption_service.generate_key()
+        
+        # 4. Encrypt certificate
+        certificate_bytes = certificate_text.encode('utf-8')
+        encrypted_data = encryption_service.encrypt(certificate_bytes, aes_key)
+        
+        # 5. Upload encrypted data to IPFS
+        ipfs_cid = ipfs_service.upload_file(
+            encrypted_data,
+            f"certificate_{request.student_id}.enc"
+        )
+        
+        if not ipfs_cid:
+            raise HTTPException(status_code=500, detail="Failed to upload to IPFS")
+        
+        # 6. Calculate certificate hash (hash of original text)
+        cert_hash = hashlib.sha256(certificate_bytes).hexdigest()
+        
+        # 7. Store AES key in database
+        cert_key = CertificateKey(
+            student_id=request.student_id,
+            aes_key=aes_key
+        )
+        db.add(cert_key)
+        db.commit()
+        
+        return IssueCertificateResponse(
+            success=True,
+            message="Certificate prepared. Please sign and submit to blockchain.",
+            student_id=request.student_id,
+            ipfs_cid=ipfs_cid,
+            cert_hash=cert_hash,
+            aes_key=aes_key  # Return key once for user to store
+        )
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create certificate: {str(e)}"
-        )
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to issue certificate: {str(e)}")
 
-@router.get("/certificates/{nim}", response_model=CertificateResponse)
-async def get_certificate(
-    nim: str,
+@router.post("/verify", response_model=VerifyCertificateResponse)
+async def verify_certificate(
+    request: VerifyCertificateRequest,
     db: Session = Depends(get_db)
 ):
-    """Get certificate by NIM"""
-    certificate = CertificateService.get_certificate_by_nim(db, nim)
-    if not certificate:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Certificate not found"
+    """
+    Verify and decrypt a certificate
+    """
+    try:
+        # 1. Check if certificate exists on blockchain
+        if not contract_service.certificate_exists(request.student_id):
+            return VerifyCertificateResponse(
+                success=False,
+                valid=False,
+                message="Certificate not found on blockchain"
+            )
+        
+        # 2. Check if certificate is valid (not revoked)
+        is_valid = contract_service.is_certificate_valid(request.student_id)
+        
+        # 3. Get certificate data from blockchain
+        cert_data = contract_service.get_certificate(request.student_id)
+        if not cert_data:
+            return VerifyCertificateResponse(
+                success=False,
+                valid=False,
+                message="Failed to retrieve certificate data"
+            )
+        
+        ipfs_cid = cert_data['ipfsCID']
+        
+        # 4. Download encrypted file from IPFS
+        encrypted_data = ipfs_service.get_file(ipfs_cid)
+        if not encrypted_data:
+            return VerifyCertificateResponse(
+                success=False,
+                valid=is_valid,
+                message="Failed to retrieve certificate from IPFS",
+                ipfs_cid=ipfs_cid
+            )
+        
+        # 5. Decrypt certificate
+        try:
+            decrypted_data = encryption_service.decrypt(encrypted_data, request.aes_key)
+            certificate_text = decrypted_data.decode('utf-8')
+        except Exception as e:
+            return VerifyCertificateResponse(
+                success=False,
+                valid=is_valid,
+                message="Invalid decryption key",
+                ipfs_cid=ipfs_cid
+            )
+        
+        # 6. Verify hash
+        calculated_hash = hashlib.sha256(decrypted_data).hexdigest()
+        blockchain_hash = cert_data['certHash']
+        
+        if calculated_hash != blockchain_hash:
+            return VerifyCertificateResponse(
+                success=False,
+                valid=False,
+                message="Certificate hash mismatch - data may be corrupted",
+                ipfs_cid=ipfs_cid
+            )
+        
+        return VerifyCertificateResponse(
+            success=True,
+            valid=is_valid,
+            certificate_text=certificate_text,
+            ipfs_cid=ipfs_cid,
+            message="Certificate verified successfully" if is_valid else "Certificate has been revoked"
         )
-    return certificate
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Verification failed: {str(e)}")
 
-@router.put("/certificates", response_model=CertificateResponse)
-async def update_certificate_key(
-    update_data: CertificateUpdate,
-    db: Session = Depends(get_db)
-):
-    """Update AES key for a certificate"""
-    certificate = CertificateService.update_aes_key(db, update_data.nim, update_data.aes_key)
-    if not certificate:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Certificate not found"
-        )
-    return certificate
-
-@router.delete("/certificates/{nim}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_certificate(
-    nim: str,
-    db: Session = Depends(get_db)
-):
-    """Delete certificate by NIM"""
-    success = CertificateService.delete_certificate(db, nim)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Certificate not found"
-        )
-    return None
+@router.get("/key/{student_id}")
+async def get_certificate_key(student_id: str, db: Session = Depends(get_db)):
+    """
+    Get AES key for a certificate (admin only in production)
+    """
+    cert_key = db.query(CertificateKey).filter(CertificateKey.student_id == student_id).first()
+    if not cert_key:
+        raise HTTPException(status_code=404, detail="Key not found")
+    
+    return {"student_id": student_id, "aes_key": cert_key.aes_key}

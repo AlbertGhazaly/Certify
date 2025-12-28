@@ -1,23 +1,31 @@
-from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from typing import Optional, List
 
-class CertificateBase(BaseModel):
-    """Base schema for Certificate"""
-    nim: str = Field(..., description="Student ID Number (NIM) - primary key")
+class IssueCertificateRequest(BaseModel):
+    student_name: str
+    student_id: str
+    degree: str
+    birth_place: str
+    birth_date: str
+    issue_date: str
+    issuer_wallets: List[str]  # List of issuer addresses
+    requires_all_signatures: bool = True
 
-class CertificateCreate(CertificateBase):
-    """Schema for creating a new certificate"""
-    aes_key: Optional[str] = Field(None, description="AES encryption key (auto-generated if not provided)")
+class IssueCertificateResponse(BaseModel):
+    success: bool
+    message: str
+    student_id: Optional[str] = None
+    ipfs_cid: Optional[str] = None
+    cert_hash: Optional[str] = None
+    aes_key: Optional[str] = None  # Return key only once
 
-class CertificateResponse(CertificateBase):
-    """Schema for certificate response"""
-    id: str = Field(..., description="NIM (ID)")
-    aes_key: str = Field(..., description="AES encryption key")
-    
-    class Config:
-        from_attributes = True
+class VerifyCertificateRequest(BaseModel):
+    student_id: str
+    aes_key: str  # User provides key to decrypt
 
-class CertificateUpdate(BaseModel):
-    """Schema for updating certificate AES key"""
-    nim: str
-    aes_key: str = Field(..., description="New AES encryption key")
+class VerifyCertificateResponse(BaseModel):
+    success: bool
+    valid: bool
+    certificate_text: Optional[str] = None
+    ipfs_cid: Optional[str] = None
+    message: str

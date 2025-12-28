@@ -32,6 +32,7 @@ contract DiplomaContract {
     
     mapping(string => Certificate) private certificates; // studentId => Certificate
     mapping(string => bool) private certificateExists; // studentId => exists
+    string[] private certificateIds; // Array to store all certificate IDs
 
     // Events
     event IssuerAdded(address indexed walletId, string publicKey);
@@ -133,15 +134,14 @@ contract DiplomaContract {
     }
 
     /**
-     * @dev Update issuer's public key (only issuers can update)
-     * @param walletId Address of the issuer
+     * @dev Update issuer's public key (only the same wallet address can update their own key)
      * @param newPublicKey New public key hex string
      */
-    function updateIssuerPublicKey(address walletId, string memory newPublicKey) external onlyIssuer {
-        require(issuers[walletId].isActive, "Issuer does not exist");
+    function updateIssuerPublicKey(string memory newPublicKey) external onlyIssuer {
+        require(issuers[msg.sender].isActive, "Issuer does not exist");
         
-        issuers[walletId].publicKey = newPublicKey;
-        emit IssuerPublicKeyUpdated(walletId, newPublicKey);
+        issuers[msg.sender].publicKey = newPublicKey;
+        emit IssuerPublicKeyUpdated(msg.sender, newPublicKey);
     }
 
     /**
@@ -220,6 +220,7 @@ contract DiplomaContract {
         cert.issueSignatures[msg.sender] = signature;
         
         certificateExists[studentId] = true;
+        certificateIds.push(studentId); // Add to certificate IDs list
         
         emit CertificateProposed(studentId, certHash, ipfsCID, msg.sender);
         emit CertificateIssueSigned(studentId, msg.sender);
@@ -359,6 +360,52 @@ contract DiplomaContract {
             cert.revokeReason,
             cert.requiresAllSignatures
         );
+    }
+
+    /**
+     * @dev Get all certificates (both valid and revoked)
+     * Returns arrays of certificate data for all certificates
+     */
+    function getAllCertificates() external view returns (
+        string[] memory studentIds,
+        bytes32[] memory certHashes,
+        string[] memory ipfsCIDs,
+        bool[] memory isValids,
+        uint256[] memory timestampsIssued,
+        uint256[] memory timestampsLastUpdated,
+        string[] memory revokeReasons
+    ) {
+        uint256 totalCerts = certificateIds.length;
+        
+        studentIds = new string[](totalCerts);
+        certHashes = new bytes32[](totalCerts);
+        ipfsCIDs = new string[](totalCerts);
+        isValids = new bool[](totalCerts);
+        timestampsIssued = new uint256[](totalCerts);
+        timestampsLastUpdated = new uint256[](totalCerts);
+        revokeReasons = new string[](totalCerts);
+        
+        for (uint i = 0; i < totalCerts; i++) {
+            string memory studentId = certificateIds[i];
+            Certificate storage cert = certificates[studentId];
+            
+            studentIds[i] = cert.studentId;
+            certHashes[i] = cert.certHash;
+            ipfsCIDs[i] = cert.ipfsCID;
+            isValids[i] = cert.isValid;
+            timestampsIssued[i] = cert.timestampIssued;
+            timestampsLastUpdated[i] = cert.timestampLastUpdated;
+            revokeReasons[i] = cert.revokeReason;
+        }
+        
+        return (studentIds, certHashes, ipfsCIDs, isValids, timestampsIssued, timestampsLastUpdated, revokeReasons);
+    }
+
+    /**
+     * @dev Get total number of certificates
+     */
+    function getCertificateCount() external view returns (uint256) {
+        return certificateIds.length;
     }
 
     /**

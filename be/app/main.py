@@ -32,7 +32,7 @@ app.add_middleware(
 app.include_router(user_router, prefix="/api/users", tags=["users"])
 app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
 app.include_router(student_router, prefix="/api", tags=["students"])
-app.include_router(certificate_router, prefix="/api", tags=["certificates"])
+app.include_router(certificate_router, prefix="/api/certificate", tags=["certificates"])
 app.include_router(issuer_registration_router, prefix="/api", tags=["issuer-registrations"])
 
 @app.get("/")

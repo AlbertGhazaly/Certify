@@ -8,10 +8,15 @@ services:
     volumes:
       - ./fe/src:/app/src
       - /app/node_modules
+    env_file:
+      - .env
     environment:
-      - VITE_API_URL=$BACKEND_URL
+      - VITE_API_URL=http://localhost:8000/api
+      - VITE_IPFS_GATEWAY=http://localhost:8080/ipfs
     depends_on:
       - backend
+    networks:
+      - certify-network
 
   backend:
     build:
@@ -22,21 +27,88 @@ services:
     volumes:
       - ./be/app:/app/app
       - /app/__pycache__
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=$DATABASE_URL
-      - SEPOLIA_URL=$SEPOLIA_URL
-      - CONTRACT_ADDRESS=$CONTRACT_ADDRESS
+      - DATABASE_URL=postgresql://user:password@db:5432/certify
+      - SEPOLIA_URL=${SEPOLIA_URL}
+      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS}
+      - SECRET_KEY=${SECRET_KEY}
+      - IPFS_URL=http://ipfs:5001
+      - IPFS_GATEWAY=http://localhost:8080/ipfs
+      - APP_NAME=Certify
+      - DEBUG=True
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      ipfs:
+        condition: service_healthy
+    networks:
+      - certify-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   db:
-    image: postgres:latest
+    image: postgres:15-alpine
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: certify
+    ports:
+      - "5433:5432" 
     volumes:
-      - db_data:/var/lib/postgresql
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - certify-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d certify"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: certify_ipfs
+    ports:
+      - "4001:4001"     # P2P port
+      - "5001:5001"     # API port
+      - "8080:8080"     # Gateway port
+    volumes:
+      - ipfs_data:/data/ipfs
+      - ipfs_staging:/export
+    environment:
+      - IPFS_PROFILE=server
+      - IPFS_PATH=/data/ipfs
+    networks:
+      - certify-network
+    entrypoint: >
+      sh -c "
+        if [ ! -f /data/ipfs/config ]; then
+          ipfs init --profile server;
+        fi &&
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '[\"*\"]' &&
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '[\"PUT\", \"POST\", \"GET\"]' &&
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Headers '[\"Authorization\", \"Content-Type\"]' &&
+        ipfs config Addresses.API /ip4/0.0.0.0/tcp/5001 &&
+        ipfs config Addresses.Gateway /ip4/0.0.0.0/tcp/8080 &&
+        ipfs daemon --migrate=true
+      "
+    healthcheck:
+      test: ["CMD", "ipfs", "id"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  certify-network:
+    driver: bridge
 
 volumes:
   db_data:
+  ipfs_data:
+  ipfs_staging:
