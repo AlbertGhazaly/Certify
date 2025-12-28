@@ -21,7 +21,7 @@ class IssueCertificateResponse(BaseModel):
 
 class VerifyCertificateRequest(BaseModel):
     student_id: str
-    aes_key: str  # User provides key to decrypt
+    # aes_key: str  
 
 class VerifyCertificateResponse(BaseModel):
     success: bool
